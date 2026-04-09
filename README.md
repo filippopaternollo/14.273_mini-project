@@ -15,7 +15,7 @@ mini-project/
 │   ├── src/
 │   │   ├── Igami2017.jl       Module entry point
 │   │   ├── parameters.jl      Params struct + default calibration
-│   │   ├── cournot.jl         Static 2-group Cournot equilibrium
+│   │   ├── cournot.jl         Two-market multi-product Cournot (cannibalization)
 │   │   ├── state_space.jl     State, CCPs, transition distribution
 │   │   └── solver.jl          Backward induction solver
 │   └── scripts/
@@ -42,7 +42,16 @@ Outputs are written to `output/`. The writeup in `writeup/progress_agglomeration
 
 **State:** `(n_o, n_b, n_n, n_pe)` — old incumbents, both-tech incumbents, new entrants, potential entrants.
 
-**Agglomeration extension:**
+**Demand (two-market):** Consumers substitute between old-gen and new-gen products:
+```
+P_o = A - B*(Q_o/M) - ρ*B*(Q_n/M)
+P_n = A - B*(Q_n/M) - ρ*B*(Q_o/M)
+```
+ρ ∈ [0,1) is the cross-market substitution parameter. ρ=0 → independent markets; ρ→1 → homogeneous goods.
+
+**Cannibalization:** `n_b` firms ("both") sell in *both* markets and internalize that their new-gen production reduces demand for their own old-gen product. This is the mechanism that deters innovation by incumbents.
+
+**Agglomeration:**
 ```
 c_n,t = c_n0 - γ * (n_b,t + n_n,t)
 ```
@@ -54,17 +63,20 @@ More firms on new tech → lower marginal cost for all new-tech firms. `γ=0` re
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| A=3, B=1, M=1 | | Linear demand |
+| A=3, B=1, M=1 | | Linear demand (own-market slope) |
 | c_o=1.5, c_n0=0.5 | | Old / new-tech costs |
 | β=0.9, κ=0.3, φ=0.2 | | Discount, innovation cost, entry cost |
 | σ=1.0 | | EVT1 scale |
+| γ=0.05 | | Agglomeration (comparative statics) |
+| ρ=0.5 | | Cross-market substitution |
 | s₀ = (4,1,1,2) | | Initial state of interest |
 
 ## Key Results
 
-At s₀ = (4,1,1,2):
-- Baseline (γ=0): P(innovate|old) ≈ 0.318, P(enter|pe) ≈ 0.512
-- Agglomeration (γ=0.05): P(innovate|old) ≈ 0.324, P(enter|pe) ≈ 0.520
+At s₀ = (4,1,1,2), ρ=0.5:
+- Baseline (γ=0): P(innovate|old) ≈ 0.313, P(enter|pe) ≈ 0.507
+- Agglomeration (γ=0.05): P(innovate|old) ≈ 0.320, P(enter|pe) ≈ 0.515
+- Cannibalization: pi_b(ρ=0.5) ≈ 0.327 vs pi_b(ρ=0) ≈ 0.531 (ρ reduces "both" firm profits)
 - Effect saturates near γ≈0.2 due to EVT1 / logit structure
 
 ## Dependencies

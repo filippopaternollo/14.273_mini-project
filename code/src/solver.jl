@@ -31,12 +31,11 @@ function compute_terminal_values(
 
     for s in states
         c_n  = c_n_eff(s, p)
-        n_in = s.n_b + s.n_n
-        pi_o, pi_n = cournot_profits(s.n_o, n_in, p.c_o, c_n, p)
+        pi_o, pi_b, pi_n = cournot_profits(s.n_o, s.n_b, s.n_n, p.c_o, c_n, p)
 
         V1[s] = Dict{Symbol, Float64}(
             :old  => pi_o,
-            :both => pi_n,
+            :both => pi_b,
             :new  => pi_n,
             :pe   => 0.0   # potential entrants don't produce
         )
@@ -73,10 +72,8 @@ function systematic_utilities(
         p::Params) :: Dict{Symbol, Float64}
 
     c_n  = c_n_eff(s, p)
-    n_in = s.n_b + s.n_n
-    pi_o, pi_n = cournot_profits(s.n_o, n_in, p.c_o, c_n, p)
-    flow = (type == :old || type == :both) ? (type == :old ? pi_o : pi_n) :
-           (type == :new ? pi_n : 0.0)
+    pi_o, pi_b, pi_n = cournot_profits(s.n_o, s.n_b, s.n_n, p.c_o, c_n, p)
+    flow = type == :old ? pi_o : type == :both ? pi_b : type == :new ? pi_n : 0.0
 
     utils = Dict{Symbol, Float64}()
 

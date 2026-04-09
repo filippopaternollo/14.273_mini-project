@@ -18,7 +18,7 @@
 
 \section{Overview}
 
-This note documents the first extension of \cite{igami2017} to incorporate
+This note documents the first extension of {igami2017} to incorporate
 \textbf{innovation spillovers / agglomeration effects} in a simplified 2-period
 setting. The goal is to understand whether the presence of other innovative firms
 raises or lowers the incentive to adopt new technology.
@@ -35,13 +35,28 @@ The market state at each period $t$ is $s_t = (n_o, n_b, n_n, n_{pe})$, where:
   \item $n_{pe}$: potential entrants.
 \end{itemize}
 Active firms in the product market are those with $n_o + n_b + n_n > 0$.
+``Both'' firms are multi-product: they continue to sell old-gen (at cost $c_o$)
+while also selling new-gen (at cost $c_{n,t}$). This is the source of the
+\textbf{cannibalization effect}: by expanding new-gen supply, a ``both'' firm
+depresses the old-gen price it receives, creating a disincentive to innovate that
+is absent for pure new entrants.
 
 \subsection{Timing Within Each Period}
 
 \begin{enumerate}
-  \item \textbf{Product market:} Cournot competition under linear inverse demand
-        $P = A - B \, Q / M$. Old firms have marginal cost $c_o$; firms with
-        new technology have (agglomeration-adjusted) cost $c_{n,t}$ (see below).
+  \item \textbf{Product market:} Cournot competition in \emph{two differentiated
+        markets} (old-generation and new-generation products) with linear inverse
+        demand:
+        \begin{align}
+          P_o &= A - \frac{B}{M}\,Q_o - \frac{\rho B}{M}\,Q_n, \label{eq:demand_o}\\
+          P_n &= A - \frac{B}{M}\,Q_n - \frac{\rho B}{M}\,Q_o, \label{eq:demand_n}
+        \end{align}
+        where $\rho \in [0,1)$ is the cross-market substitution parameter.
+        Old firms ($n_o$) compete only in the old-gen market at cost $c_o$.
+        New entrants ($n_n$) compete only in the new-gen market at cost $c_{n,t}$.
+        ``Both'' firms ($n_b$) are \emph{multi-product}: they sell in both markets
+        simultaneously and internalize the \textbf{cannibalization} effect --- their
+        new-gen output reduces demand for their own old-gen product.
   \item \textbf{Private shocks:} Each firm draws i.i.d.\ cost shocks
         $\varepsilon_{i,a} \sim \mathrm{Gumbel}(0, \sigma)$ for each action $a$.
   \item \textbf{Discrete choices:}
@@ -68,7 +83,7 @@ spillover / agglomeration effect).
 
 With private information (EVT1 shocks), each firm's optimisation is equivalent
 to a single-agent problem taking others' conditional choice probabilities (CCPs)
-as given \citep{igami2017}. This yields closed-form logit CCPs:
+as given. This yields closed-form logit CCPs:
 \begin{equation}
   P(a \mid \tau, s) = \frac{\exp\!\bigl(\bar{V}_{a}(\tau,s)/\sigma\bigr)}
                            {\sum_{a'} \exp\!\bigl(\bar{V}_{a'}(\tau,s)/\sigma\bigr)},
@@ -117,6 +132,7 @@ Table~\ref{tab:params}.
     $\phi$    & Entry cost                    & 0.2  \\
     $\sigma$  & EVT1 scale                    & 1.0  \\
     $\gamma$  & Agglomeration (comparative statics) & varied \\
+    $\rho$    & Cross-market substitution     & 0.5  \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -169,13 +185,34 @@ Table~\ref{tab:compstats} reports equilibrium CCPs as $\gamma$ varies from 0 to
   \label{fig:compstats}
 \end{figure}
 
+\subsection{Comparative Statics in $\rho$ (Cannibalization)}
+
+Figure~\ref{fig:cannibalization} plots equilibrium CCPs as the substitution
+parameter $\rho$ varies from 0 (independent markets) to 0.95 (near-homogeneous
+goods), holding $\gamma = 0.05$.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{../output/figures/comp_stats_cannibalization.pdf}
+  \caption{$P(\text{innovate}\mid\text{old})$ and $P(\text{enter}\mid\text{pe})$
+           as functions of $\rho$ at $s_0 = (4,1,1,2)$, $\gamma = 0.05$.}
+  \label{fig:cannibalization}
+\end{figure}
+
 \subsection{Discussion}
 
-Two features of the comparative statics are notable:
+Three features of the comparative statics are notable:
 \begin{enumerate}
   \item \textbf{Positive agglomeration effect:} Higher $\gamma$ unambiguously
         raises the innovation rate for small values of $\gamma$. This confirms
         the model's central prediction: knowledge spillovers encourage adoption.
+  \item \textbf{Cannibalization deters innovation:} Higher $\rho$ (stronger
+        substitution between old-gen and new-gen) reduces the profit of ``both''
+        firms by depressing old-gen prices. In the calibration, per-firm ``both''
+        profit falls from $\approx 0.531$ at $\rho=0$ to $\approx 0.327$ at
+        $\rho=0.5$. This is the central mechanism in Igami (2017): incumbents are
+        reluctant to innovate because doing so cannibalizes their existing
+        old-gen revenue.
   \item \textbf{Saturation:} The innovation rate saturates near $1/3$ for large
         $\gamma$. This is a feature of the EVT1 / logit structure: with large
         $\sigma$ relative to payoff differences, all actions approach equal
