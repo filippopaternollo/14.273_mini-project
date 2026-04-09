@@ -18,7 +18,7 @@
 
 \section{Overview}
 
-This note documents the first extension of {igami2017} to incorporate
+This note documents the first extension of Igami (2017) to incorporate
 \textbf{innovation spillovers / agglomeration effects} in a simplified 2-period
 setting. The goal is to understand whether the presence of other innovative firms
 raises or lowers the incentive to adopt new technology.
@@ -59,12 +59,14 @@ is absent for pure new entrants.
         new-gen output reduces demand for their own old-gen product.
   \item \textbf{Private shocks:} Each firm draws i.i.d.\ cost shocks
         $\varepsilon_{i,a} \sim \mathrm{Gumbel}(0, \sigma)$ for each action $a$.
-  \item \textbf{Discrete choices:}
+  \item \textbf{Discrete choices} (sequential order: old $\to$ both $\to$ new $\to$ pe):
         \begin{itemize}
           \item old: $\{\text{stay}, \text{innovate}, \text{exit}\}$
           \item both/new: $\{\text{stay}, \text{exit}\}$
           \item pe: $\{\text{enter}, \text{quit}\}$
         \end{itemize}
+        Each type observes the \emph{realized} outcomes of all earlier movers before
+        making its own decision.
   \item \textbf{Transition} to period $t+1$.
 \end{enumerate}
 
@@ -81,33 +83,58 @@ spillover / agglomeration effect).
 
 \subsection{Value Functions and CCPs}
 
-With private information (EVT1 shocks), each firm's optimisation is equivalent
-to a single-agent problem taking others' conditional choice probabilities (CCPs)
-as given. This yields closed-form logit CCPs:
+Because firms move sequentially within each period and each type observes the
+\emph{realized} outcomes of all earlier movers, each type's decision problem is a
+genuine \textbf{single-agent problem}: earlier-mover uncertainty has been resolved,
+and later-mover choices enter only through pre-computed CCPs.
+Combined with i.i.d.\ EVT1 private cost shocks, this yields closed-form logit CCPs
+at each stage:
 \begin{equation}
-  P(a \mid \tau, s) = \frac{\exp\!\bigl(\bar{V}_{a}(\tau,s)/\sigma\bigr)}
-                           {\sum_{a'} \exp\!\bigl(\bar{V}_{a'}(\tau,s)/\sigma\bigr)},
+  P(a \mid \tau, \tilde{s}) = \frac{\exp\!\bigl(\bar{V}_{a}(\tau,\tilde{s})/\sigma\bigr)}
+                           {\sum_{a'} \exp\!\bigl(\bar{V}_{a'}(\tau,\tilde{s})/\sigma\bigr)},
 \end{equation}
-where $\bar{V}_a$ is the systematic utility of action $a$:
+where $\tilde{s}$ is the \emph{realized intermediate state} after all earlier
+movers have acted, and $\bar{V}_a$ is the systematic utility:
 \begin{equation}
-  \bar{V}_a(\tau, s) = \pi_\tau(s) + \text{cost}(a) + \beta \,
-  \mathbb{E}\!\left[ V_{t+1}(\tau', s') \mid s, a_i = a,\, \mathrm{CCP}_{-i} \right].
+  \bar{V}_a(\tau, \tilde{s}) = \pi_\tau(s_0) + \text{cost}(a) + \beta \,
+  \mathbb{E}\!\left[ V_{t+1}(\tau', s') \mid \tilde{s},\, a_i = a,\, \mathrm{CCP}_{\text{later}} \right].
 \end{equation}
+Here $\mathrm{CCP}_{\text{later}}$ denotes pre-computed CCPs of same-type peers and
+all later-moving types; flow profits $\pi_\tau(s_0)$ are evaluated at the
+period-opening state.
 
 \subsection{Solution Method}
 
-The model is solved by \textbf{backward induction} in two steps:
+The model is solved by \textbf{one-pass backward induction}, following Igami (2017):
 \begin{enumerate}
   \item \textbf{Terminal period ($t=1$):} $V_1(\tau, s_1) = \pi_\tau(s_1)$,
         where Cournot profits use the agglomeration-adjusted cost
         $c_{n,1} = c_{n,0} - \gamma(n_{b,1} + n_{n,1})$.
-  \item \textbf{Period $t=0$:} For each state $s_0$, compute CCPs by iterating
-        the logit fixed-point until convergence (within-period equilibrium).
-        The transition distribution is computed exactly via products of
-        independent Binomial/Multinomial draws.
+  \item \textbf{Period $t=0$:} For each state $s_0$, stages are solved in
+        \emph{reverse move order} (PE $\to$ new $\to$ both $\to$ old),
+        exploiting the sequential structure:
+        \begin{itemize}
+          \item \textbf{Stage 4 (PE):} Each PE firm observes the full realized
+                intermediate state $\tilde{s}$ and solves a binary logit
+                $\{\text{enter}, \text{quit}\}$. CCPs are pre-computed for all
+                intermediate states reachable from $s_0$.
+          \item \textbf{Stage 3 (new):} Each new firm solves a binary logit
+                $\{\text{stay}, \text{exit}\}$, conditioning on pre-computed PE CCPs
+                to integrate over the PE-stage continuation value.
+          \item \textbf{Stage 2 (both):} Each both firm solves a binary logit,
+                conditioning on new + PE CCPs. Innovators locked in from Stage 1
+                ($k_{io}$ old firms that chose innovate) are added to $n_b$
+                before this stage.
+          \item \textbf{Stage 1 (old):} Each old firm solves a multinomial logit
+                $\{\text{stay}, \text{innovate}, \text{exit}\}$, conditioning on
+                all lower-stage CCPs.
+        \end{itemize}
+        No fixed-point iteration is needed within the period: the sequential
+        structure makes each stage a closed-form single-agent problem given
+        pre-computed downstream CCPs. Marginal CCPs for later-moving types are
+        recovered by integrating over the equilibrium transition distribution
+        (products of independent Binomial/Multinomial draws).
 \end{enumerate}
-No cross-period iteration is required; this is a one-pass backward induction,
-consistent with Igami's (2017) solution algorithm.
 
 \section{Calibration}
 
@@ -220,6 +247,68 @@ Three features of the comparative statics are notable:
         be more pronounced.
 \end{enumerate}
 
+\section{Counterfactuals}
+
+\subsection{Regional Structure}
+
+To study the interaction between industrial policy and agglomeration, we extend the
+model to three geographic clusters: the United States, Europe, and Asia.
+Product market competition remains \textbf{global} --- all firms compete in the same
+Cournot game regardless of location --- but agglomeration spillovers are
+\textbf{local}:
+\begin{equation}
+  c_{n,t}^{(g)} = c_{n,0} - \gamma \cdot N^{\mathrm{inn}}_{g,t}, \qquad
+  N^{\mathrm{inn}}_{g,t} = n_{b,g,t} + n_{n,g,t},
+  \label{eq:local_agglom}
+\end{equation}
+where $g \in \{\text{US}, \text{EU}, \text{Asia}\}$ is a firm's region and
+$N^{\mathrm{inn}}_{g,t}$ counts only same-region innovative firms.
+
+Each firm privately captures the lower cost when it innovates, but does not
+internalize the benefit it confers on regional peers --- a standard
+\textbf{agglomeration externality} that creates a wedge between the social and
+private return to innovation.
+
+\subsection{Counterfactual 1: Asian Industrial Policy}
+
+Asia subsidizes innovation to correct the regional agglomeration externality.
+The first-best Pigouvian subsidy per innovating firm equals the marginal social
+benefit it confers on regional peers:
+\begin{equation}
+  \tau^*_{\mathrm{Asia}} = \gamma \cdot \frac{\partial N^{\mathrm{inn}}_{\mathrm{Asia}}}
+                                              {\partial \mathbf{1}[\text{innovate}]}
+  = \gamma \cdot N^{\mathrm{inn}}_{\mathrm{Asia}},
+\end{equation}
+i.e., each additional Asian innovator reduces the new-tech cost for all existing
+regional innovators by $\gamma$, so the subsidy is increasing in the cluster size.
+
+The key qualitative prediction is an \textbf{agglomeration spiral}: the subsidy
+raises Asian innovation rates, which enlarges $N^{\mathrm{inn}}_{\mathrm{Asia}}$,
+which further lowers costs and attracts more innovation, tilting the long-run global
+industry composition toward Asia. Because competition is global, this comes partly
+at the expense of US and European firms whose market shares decline.
+
+\subsection{Counterfactual 2: EU--US Knowledge Integration}
+
+The EU and US agree to pool their innovation spillovers --- perhaps through a
+bilateral R\&D treaty or joint research infrastructure. Formally, the effective
+cluster size for both blocs becomes:
+\begin{equation}
+  \tilde{N}^{\mathrm{inn}}_{\mathrm{EU+US},t}
+  = n_{b,\mathrm{EU},t} + n_{n,\mathrm{EU},t}
+  + n_{b,\mathrm{US},t} + n_{n,\mathrm{US},t}.
+\end{equation}
+Because the integrated cluster is larger, the new-tech cost for EU and US firms
+falls by more than under the autarkic baseline, raising innovation rates in both
+regions. Asia, whose spillovers remain local, sees its relative cost advantage
+eroded, reshaping global industry geography in the opposite direction from
+Counterfactual 1.
+
+The two counterfactuals together illustrate the \textbf{strategic complementarity}
+between agglomeration policy and geography: the equilibrium industry location depends
+on which region acts first to internalize the externality or to deepen cross-border
+knowledge flows.
+
 \section{Next Steps}
 
 \begin{enumerate}
@@ -231,8 +320,5 @@ Three features of the comparative statics are notable:
         where $g(i)$ is firm $i$'s location cluster.
   \item Study welfare and industrial policy implications (e.g., R\&D subsidies).
 \end{enumerate}
-
-\bibliographystyle{aer}
-\bibliography{refs}
 
 \end{document}
