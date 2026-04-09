@@ -1,0 +1,24 @@
+# System
+.DS_Store
+
+# Julia
+code/Manifest.toml
+
+# Data (never commit raw data)
+data/raw/
+data/processed/
+
+# Python (if used later)
+.venv/
+__pycache__/
+
+# LaTeX build artifacts
+writeup/*.aux
+writeup/*.log
+writeup/*.out
+writeup/*.bbl
+writeup/*.blg
+writeup/*.synctex.gz
+writeup/*.fls
+writeup/*.fdb_latexmk
+writeup/*.toc
