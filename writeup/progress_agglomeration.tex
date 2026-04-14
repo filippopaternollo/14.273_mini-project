@@ -284,21 +284,40 @@ targeted industrial policy.
 \subsection{Solution with Regional States}
 
 The sequential-move structure (old $\to$ both $\to$ new $\to$ pe) carries
-over unchanged: within each stage firms in the same $(type, r)$ slot still
-solve a single-agent problem, and i.i.d.\ EVT1 shocks still deliver
-closed-form logit CCPs. The only change is that each stage now has
-\emph{one CCP per region}, and the three regional CCPs are jointly pinned
-down by a Jacobi fixed point on the stage's logit system.
+over unchanged, and we extend the same idea one level down: \textbf{within
+each stage, regions move sequentially}, $r = 1 \to 2 \to 3$. When firms in
+region~$r$ decide, they observe the realized outcome of regions
+$1,\dots,r-1$ and integrate over the (yet-to-play) strategies of regions
+$r+1,\dots,R$. This is the regional analogue of Igami's cross-type
+sequencing: it makes every sub-stage a single-agent problem whose CCP is a
+\emph{scalar} fixed point rather than a joint fixed point across regions,
+and it removes any coupling in the solver between regions at the same
+stage.
 
-Concretely, the solver uses layered caches so that the stage-4 (PE) problem
---- which depends only on the post-new-stage state --- is solved once and
-reused across initial states via $\mathrm{EV}_{\mathrm{after\,pe}}[s_{an}]$.
-Stage 3 (new) cascades through that cache, stage 2 (both) through
-$\mathrm{EV}_{\mathrm{after\,new}}$, and stage 1 (old) through
-$\mathrm{EV}_{\mathrm{after\,both}}$. Because the state space now has $4R =
-12$ integer coordinates, we cap $N_{\max} = 6$ on this branch (about $1.8
-\times 10^4$ enumerated states) and pick initial states with total firm
-count $\le 6$.
+Concretely, we solve each stage in reverse region order. Region~$R$'s
+scalar FP is computed first for every reachable sub-state, and cached.
+Region~$R-1$'s FP is then computed given the cached region-$R$ continuation,
+and so on down to region~$1$. Across stages, the usual layered caches still
+apply: stage-4 (PE) depends only on the post-new-stage state and is reused
+across initial states via
+$\mathrm{EV}_{\mathrm{after\,pe}}[s_{an}, r]$; stages~3, 2, 1 cascade through
+$\mathrm{EV}_{\mathrm{after\,new}}$, $\mathrm{EV}_{\mathrm{after\,both}}$,
+and $\mathrm{EV}_{\mathrm{after\,old}}$, each keyed by
+$(\text{State}, r)$. Because each sub-state's CCP is a function of the
+realized history, the per-region CCPs reported in the results below are
+\emph{marginalised} over the equilibrium play of earlier-moving regions,
+computed by a forward traversal of the sub-stage tree.
+
+Because the state space now has $4R = 12$ integer coordinates, we cap
+$N_{\max} = 6$ on this branch (about $1.8\times 10^4$ enumerated states) and
+pick initial states with total firm count $\le 6$. One visible artefact of
+the sequential-move convention is a small first-mover asymmetry in the
+baseline: with uniform $\gamma_r = 0.05$ the reported innovation CCPs are
+$(0.3333, 0.3330, 0.3326)$ rather than the exactly-symmetric values one
+would get under simultaneous moves within a stage. Region~1 commits without
+observing anyone, while region~3 best-responds to the realised history; the
+gap is $\le 10^{-3}$ in all experiments and does not affect any of the
+counterfactual comparisons.
 
 \subsection{Baseline and Counterfactuals}
 

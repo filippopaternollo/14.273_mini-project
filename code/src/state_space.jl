@@ -10,9 +10,9 @@ State (all per region, NTuple{3,Int}):
   n_pe : potential entrants in region r
 
 Within each period moves are sequential: old → both → new → pe.  Within a
-stage, firms in the same (type, region) slot solve a single-agent problem
-taking CCPs of other regions and later stages as given; a joint fixed point
-across regions is iterated to convergence.
+stage, regions also move sequentially (r=1 → r=2 → r=3): region r observes
+the realized outcome of regions 1..r-1 and integrates over strategies of
+regions r+1..R.  Each sub-stage is a scalar fixed point.
 """
 
 struct State

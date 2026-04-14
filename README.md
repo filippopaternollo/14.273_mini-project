@@ -72,9 +72,12 @@ asymmetric FOC system with per-region marginal costs on new-gen.
 
 **Solution:** One-pass backward induction. Private EVT1 shocks make each
 firm's problem single-agent, yielding closed-form logit CCPs at each stage
-(old → both → new → pe). In the regional version each stage is solved via a
-joint Jacobi fixed point over the three regions, cascaded through layered
-caches (`ev_after_pe`, `ev_after_new`, `ev_after_both`).
+(old → both → new → pe). In the regional version **regions also move
+sequentially within each stage** (r=1 → r=2 → r=3): region r observes the
+realized outcome of regions 1..r−1 before choosing, so each stage collapses
+to three *scalar* fixed points instead of a joint 3-variable fixed point.
+CCPs are cached by sub-state `(State, r)`; continuation values cascade
+through layered caches (`ev_old`, `ev_both`, `ev_new`, `ev_pe`).
 
 ## Key Parameters (Illustrative Calibration)
 
