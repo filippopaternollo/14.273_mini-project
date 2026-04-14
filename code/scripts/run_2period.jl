@@ -9,11 +9,13 @@ Outputs:
 
 using Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
+Pkg.instantiate()
 
 push!(LOAD_PATH, joinpath(@__DIR__, "../src"))
 include(joinpath(@__DIR__, "../src/Igami2017.jl"))
 using .Igami2017
-using Plots, Printf, DataFrames
+import .Igami2017: State, Params, StateCCPs, default_params, solve_2period, cournot_profits  # ← add this
+using Plots, Plots.PlotMeasures, Printf, DataFrames
 
 # ── Directories ──────────────────────────────────────────────────────────────
 const OUTPUT_DIR = joinpath(@__DIR__, "../../output")
@@ -81,49 +83,110 @@ for γ in gamma_grid
 end
 
 # ── Plot ──────────────────────────────────────────────────────────────────────
-plt = plot(
-    collect(gamma_grid), [p_innov p_enter],
-    label  = ["P(innovate | old)" "P(enter | pe)"],
-    xlabel = "Agglomeration parameter γ",
-    ylabel = "Probability",
-    title  = "CCPs vs Agglomeration (s₀ = (4,1,1,2))",
-    lw     = 2,
-    legend = :right,
-    grid   = true
-)
+# ── Figure 1: CCPs vs γ — one subplot per probability, lines by ρ ─────────────
+rho_vals   = [0.0, 0.25, 0.5, 0.75]
+rho_colors = [:steelblue, :darkorange, :green, :crimson]
+rho_labels = ["ρ = 0.00" "ρ = 0.25" "ρ = 0.50" "ρ = 0.75"]
 
-fig_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_agglomeration.pdf")
-savefig(plt, fig_path)
-println("  Figure saved to: $fig_path")
+gamma_grid = 0.0:0.01:0.3
+# Matrix: rows = γ values, cols = ρ values
+innov_by_rho = zeros(length(gamma_grid), length(rho_vals))
+enter_by_rho = zeros(length(gamma_grid), length(rho_vals))
 
-# ── Comparative statics: P(innovate|old, s0) vs ρ (cannibalization) ──────────
-println("\n=== Comparative statics vs ρ (cannibalization) ===")
-rho_grid   = 0.0:0.05:0.95
-p_innov_rho = Float64[]
-p_enter_rho = Float64[]
-
-for ρ in rho_grid
-    p_ρ = default_params(gamma=0.05, rho=ρ)
-    _, ccps_ρ = solve_2period(p_ρ)
-    c_ρ = ccps_ρ[S0]
-    push!(p_innov_rho, c_ρ.p_io)
-    push!(p_enter_rho, c_ρ.p_ep)
+for (j, ρ) in enumerate(rho_vals)
+    for (i, γ) in enumerate(gamma_grid)
+        _, ccps_γρ = solve_2period(default_params(gamma=γ, rho=ρ))
+        c = ccps_γρ[S0]
+        innov_by_rho[i, j] = c.p_io
+        enter_by_rho[i, j] = c.p_ep
+    end
 end
 
-plt_rho = plot(
-    collect(rho_grid), [p_innov_rho p_enter_rho],
-    label  = ["P(innovate | old)" "P(enter | pe)"],
-    xlabel = "Substitution parameter ρ",
-    ylabel = "Probability",
-    title  = "CCPs vs Cannibalization (s₀ = (4,1,1,2), γ = 0.05)",
-    lw     = 2,
-    legend = :right,
-    grid   = true
-)
+γ_vec = collect(gamma_grid)
 
-fig_rho_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_cannibalization.pdf")
-savefig(plt_rho, fig_rho_path)
-println("  Figure saved to: $fig_rho_path")
+ax1 = plot(γ_vec, innov_by_rho,
+    rho_labels   = reshape(["ρ = 0.00", "ρ = 0.25", "ρ = 0.50", "ρ = 0.75"], 1, :),
+
+    color = reshape(rho_colors, 1, :),
+    lw         = 2,
+    xlabel     = "Agglomeration γ",
+    ylabel     = "Probability",
+    title      = "P(innovate | old)",
+    legend     = :topright,
+    grid       = true)
+
+
+ax2 = plot(γ_vec, enter_by_rho,
+    rho_labels   = reshape(["ρ = 0.00", "ρ = 0.25", "ρ = 0.50", "ρ = 0.75"], 1, :),
+    color = reshape(rho_colors, 1, :),
+    lw         = 2,
+    xlabel     = "Agglomeration γ",
+    ylabel     = "",
+    title      = "P(enter | pe)",
+    legend     = :topright,
+    grid       = true)
+
+fig1 = plot(ax1, ax2,
+    layout     = (1, 2),
+    size       = (900, 380),
+    plot_title = "CCPs vs Agglomeration (s₀ = (4,1,1,2))",
+    left_margin  = 10Plots.mm,
+    bottom_margin = 8Plots.mm)
+
+fig1_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_agglomeration.pdf")
+savefig(fig1, fig1_path)
+println("  Figure saved to: $fig1_path")
+
+# ── Figure 2: CCPs vs ρ — one subplot per probability, lines by γ ─────────────
+gamma_vals   = [0.0, 0.05, 0.10, 0.20]
+gamma_colors = [:steelblue, :darkorange, :green, :crimson]
+gamma_labels = ["γ = 0.00" "γ = 0.05" "γ = 0.10" "γ = 0.20"]
+
+rho_grid = 0.0:0.05:0.95
+innov_by_gamma = zeros(length(rho_grid), length(gamma_vals))
+enter_by_gamma = zeros(length(rho_grid), length(gamma_vals))
+
+for (j, γ) in enumerate(gamma_vals)
+    for (i, ρ) in enumerate(rho_grid)
+        _, ccps_ργ = solve_2period(default_params(gamma=γ, rho=ρ))
+        c = ccps_ργ[S0]
+        innov_by_gamma[i, j] = c.p_io
+        enter_by_gamma[i, j] = c.p_ep
+    end
+end
+
+ρ_vec = collect(rho_grid)
+
+ax3 = plot(ρ_vec, innov_by_gamma,
+    gamma_labels = reshape(["γ = 0.00", "γ = 0.05", "γ = 0.10", "γ = 0.20"], 1, :),
+    color = reshape(gamma_colors, 1, :),
+    lw         = 2,
+    xlabel     = "Substitution ρ",
+    ylabel     = "Probability",
+    title      = "P(innovate | old)",
+    legend     = :topright,
+    grid       = true)
+
+ax4 = plot(ρ_vec, enter_by_gamma,
+    gamma_labels = reshape(["γ = 0.00", "γ = 0.05", "γ = 0.10", "γ = 0.20"], 1, :),
+    color = reshape(gamma_colors, 1, :),
+    lw         = 2,
+    xlabel     = "Substitution ρ",
+    ylabel     = "",
+    title      = "P(enter | pe)",
+    legend     = :topright,
+    grid       = true)
+
+fig2 = plot(ax3, ax4,
+    layout     = (1, 2),
+    size       = (900, 380),
+    plot_title = "CCPs vs Cannibalization (s₀ = (4,1,1,2))",
+    left_margin  = 10Plots.mm,
+    bottom_margin = 8Plots.mm)
+
+fig2_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_cannibalization.pdf")
+savefig(fig2, fig2_path)
+println("  Figure saved to: $fig2_path")
 
 # ── Summary table ─────────────────────────────────────────────────────────────
 df = DataFrame(
