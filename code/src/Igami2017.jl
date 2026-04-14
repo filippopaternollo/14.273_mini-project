@@ -5,10 +5,11 @@ include("cournot.jl")
 include("state_space.jl")
 include("solver.jl")
 
+export R
 export Params, default_params
-export State, StateCCPs, all_states, c_n_eff
-export cournot_profits
-export compute_terminal_values, solve_2period
-export solve_pe_stage, solve_new_stage, solve_both_stage, solve_old_stage
+export State, StateCCPs, EV, all_states, total_firms
+export c_n_eff, c_n_vec
+export cournot_profits, cournot_profits_regional
+export compute_terminal_values, solve_2period, solve_initial, solve_state
 
 end
