@@ -104,34 +104,23 @@ end
 
 γ_vec = collect(gamma_grid)
 
-ax1 = plot(γ_vec, innov_by_rho,
-    rho_labels   = reshape(["ρ = 0.00", "ρ = 0.25", "ρ = 0.50", "ρ = 0.75"], 1, :),
+ax1 = plot(xlabel="Agglomeration γ", ylabel="Probability",
+           title="P(innovate | old)", legend=:topright, grid=true)
+ax2 = plot(xlabel="Agglomeration γ", ylabel="",
+           title="P(enter | pe)", legend=:topright, grid=true)
 
-    color = reshape(rho_colors, 1, :),
-    lw         = 2,
-    xlabel     = "Agglomeration γ",
-    ylabel     = "Probability",
-    title      = "P(innovate | old)",
-    legend     = :topright,
-    grid       = true)
-
-
-ax2 = plot(γ_vec, enter_by_rho,
-    rho_labels   = reshape(["ρ = 0.00", "ρ = 0.25", "ρ = 0.50", "ρ = 0.75"], 1, :),
-    color = reshape(rho_colors, 1, :),
-    lw         = 2,
-    xlabel     = "Agglomeration γ",
-    ylabel     = "",
-    title      = "P(enter | pe)",
-    legend     = :topright,
-    grid       = true)
+for (j, ρ) in enumerate(rho_vals)
+    plot!(ax1, γ_vec, innov_by_rho[:, j],
+          label="ρ = $(rho_vals[j])", color=rho_colors[j], lw=2)
+    plot!(ax2, γ_vec, enter_by_rho[:, j],
+          label="ρ = $(rho_vals[j])", color=rho_colors[j], lw=2)
+end
 
 fig1 = plot(ax1, ax2,
-    layout     = (1, 2),
-    size       = (900, 380),
-    plot_title = "CCPs vs Agglomeration (s₀ = (4,1,1,2))",
-    left_margin  = 10Plots.mm,
-    bottom_margin = 8Plots.mm)
+    layout=(1, 2), size=(900, 380),
+    plot_title="CCPs vs Agglomeration (s₀ = (4,1,1,2))",
+    left_margin=10Plots.mm, bottom_margin=8Plots.mm)
+
 
 fig1_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_agglomeration.pdf")
 savefig(fig1, fig1_path)
@@ -157,33 +146,23 @@ end
 
 ρ_vec = collect(rho_grid)
 
-ax3 = plot(ρ_vec, innov_by_gamma,
-    gamma_labels = reshape(["γ = 0.00", "γ = 0.05", "γ = 0.10", "γ = 0.20"], 1, :),
-    color = reshape(gamma_colors, 1, :),
-    lw         = 2,
-    xlabel     = "Substitution ρ",
-    ylabel     = "Probability",
-    title      = "P(innovate | old)",
-    legend     = :topright,
-    grid       = true)
+ax3 = plot(xlabel="Substitution ρ", ylabel="Probability",
+           title="P(innovate | old)", legend=:topright, grid=true)
+ax4 = plot(xlabel="Substitution ρ", ylabel="",
+           title="P(enter | pe)", legend=:topright, grid=true)
 
-ax4 = plot(ρ_vec, enter_by_gamma,
-    gamma_labels = reshape(["γ = 0.00", "γ = 0.05", "γ = 0.10", "γ = 0.20"], 1, :),
-    color = reshape(gamma_colors, 1, :),
-    lw         = 2,
-    xlabel     = "Substitution ρ",
-    ylabel     = "",
-    title      = "P(enter | pe)",
-    legend     = :topright,
-    grid       = true)
+for (j, γ) in enumerate(gamma_vals)
+    plot!(ax3, ρ_vec, innov_by_gamma[:, j],
+          label="γ = $(gamma_vals[j])", color=gamma_colors[j], lw=2)
+    plot!(ax4, ρ_vec, enter_by_gamma[:, j],
+          label="γ = $(gamma_vals[j])", color=gamma_colors[j], lw=2)
+end
 
 fig2 = plot(ax3, ax4,
-    layout     = (1, 2),
-    size       = (900, 380),
-    plot_title = "CCPs vs Cannibalization (s₀ = (4,1,1,2))",
-    left_margin  = 10Plots.mm,
-    bottom_margin = 8Plots.mm)
-
+    layout=(1, 2), size=(900, 380),
+    plot_title="CCPs vs Cannibalization (s₀ = (4,1,1,2))",
+    left_margin=10Plots.mm, bottom_margin=8Plots.mm)
+    
 fig2_path = joinpath(OUTPUT_DIR, "figures", "comp_stats_cannibalization.pdf")
 savefig(fig2, fig2_path)
 println("  Figure saved to: $fig2_path")
