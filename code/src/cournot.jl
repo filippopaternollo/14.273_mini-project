@@ -146,44 +146,60 @@ end
 # ===========================================================================
 #  Regional Cournot: global competition, per-region new-tech costs
 # ===========================================================================
+# Two-market Cournot with R regional cost types on the new-gen side; all
+# firms compete in a single global market pair. Per-firm profits satisfy
+#   pi_o_r = b · q_oo_r², pi_n_r = b · q_nn_r²,
+#   pi_b_r = b · (q_bo_r² + q_bn_r²) + 2s · q_bo_r · q_bn_r.
 """
-    cournot_profits_regional(n_o, n_b, n_n, c_o, c_n, p)
+    cournot_quantities_regional(n_o, n_b, n_n, c_o, c_n, p)
 
-Two-market Cournot equilibrium with R regional cost types on the new-gen
-side.  All firms compete in a single global market pair (P_o, P_n) — the
-regional dimension enters only through each firm's marginal cost on
-new-gen, so the FOC system is asymmetric.
-
-Inputs:
-  n_o, n_b, n_n :: NTuple{R,Int}  — firm counts by type, per region
-  c_o           :: Float64         — old-gen marginal cost (common)
-  c_n           :: NTuple{R,Float64} — new-gen marginal cost per region
-  p             :: Params
-
-Returns `(pi_o, pi_b, pi_n)` as a triple of `NTuple{R,Float64}`: per-firm
-profits for each (type, region) slot (0 where no firm exists).
-
-The symmetric-within-slot equilibrium has up to 4·R distinct quantities:
-`q_oo_r, q_bo_r, q_bn_r, q_nn_r`.  Corner solutions where a slot would
-produce ≤ 0 are dropped iteratively — same scheme as the single-region
-`cournot_profits`.
-
-Per-firm profit identities (derived from FOCs, where b = B/M, s = ρB/M):
-  pi_o_r = b · q_oo_r²
-  pi_n_r = b · q_nn_r²
-  pi_b_r = b · (q_bo_r² + q_bn_r²) + 2s · q_bo_r · q_bn_r
+Same solution routine as `cournot_profits_regional`, but returns the
+four `NTuple{R,Float64}` of equilibrium quantities
+`(q_oo, q_bo, q_bn, q_nn)` (per-firm, per-region, per-product). A slot
+with no firm or a dropped corner returns 0.0.
 """
+function cournot_quantities_regional(n_o::NTuple{R,Int}, n_b::NTuple{R,Int},
+                                      n_n::NTuple{R,Int}, c_o::Float64,
+                                      c_n::NTuple{R,Float64}, p::Params)
+    q_oo, q_bo, q_bn, q_nn = _solve_regional_quantities(n_o, n_b, n_n, c_o, c_n, p)
+    return (ntuple(r -> q_oo[r], R),
+            ntuple(r -> q_bo[r], R),
+            ntuple(r -> q_bn[r], R),
+            ntuple(r -> q_nn[r], R))
+end
+
 function cournot_profits_regional(n_o::NTuple{R,Int}, n_b::NTuple{R,Int},
                                    n_n::NTuple{R,Int}, c_o::Float64,
                                    c_n::NTuple{R,Float64}, p::Params)
+    B, M = p.B, p.M
+    b_ = B / M
+    s_ = p.rho * B / M
+    q_oo, q_bo, q_bn, q_nn = _solve_regional_quantities(n_o, n_b, n_n, c_o, c_n, p)
+    pi_o = ntuple(r -> b_ * q_oo[r]^2, R)
+    pi_b = ntuple(r -> b_ * (q_bo[r]^2 + q_bn[r]^2) + 2 * s_ * q_bo[r] * q_bn[r], R)
+    pi_n = ntuple(r -> b_ * q_nn[r]^2, R)
+    return (pi_o, pi_b, pi_n)
+end
+
+"""
+    _solve_regional_quantities(n_o, n_b, n_n, c_o, c_n, p) -> (q_oo, q_bo, q_bn, q_nn)
+
+Internal helper: solves the regional asymmetric Cournot system with
+iterative corner drops and returns the four length-R quantity vectors
+(as `Vector{Float64}`, slot 0 where no firm exists or the corner is
+inactive).
+"""
+function _solve_regional_quantities(n_o::NTuple{R,Int}, n_b::NTuple{R,Int},
+                                     n_n::NTuple{R,Int}, c_o::Float64,
+                                     c_n::NTuple{R,Float64}, p::Params)
     A, B, M = p.A, p.B, p.M
     b_ = B / M
     s_ = p.rho * B / M
 
-    zero_tuple = ntuple(_ -> 0.0, R)
+    zero_v() = zeros(R)
 
     if sum(n_o) + sum(n_b) + sum(n_n) == 0
-        return (zero_tuple, zero_tuple, zero_tuple)
+        return (zero_v(), zero_v(), zero_v(), zero_v())
     end
 
     act_oo = [n_o[r] > 0 for r in 1:R]
@@ -313,12 +329,9 @@ function cournot_profits_regional(n_o::NTuple{R,Int}, n_b::NTuple{R,Int},
         end
 
         if !changed
-            pi_o = ntuple(r -> b_ * q_oo[r]^2, R)
-            pi_b = ntuple(r -> b_ * (q_bo[r]^2 + q_bn[r]^2) + 2 * s_ * q_bo[r] * q_bn[r], R)
-            pi_n = ntuple(r -> b_ * q_nn[r]^2, R)
-            return (pi_o, pi_b, pi_n)
+            return (q_oo, q_bo, q_bn, q_nn)
         end
     end
 
-    return (zero_tuple, zero_tuple, zero_tuple)
+    return (zero_v(), zero_v(), zero_v(), zero_v())
 end

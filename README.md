@@ -16,7 +16,7 @@ mini-project/
 ├── code/                      Julia project (activate here)
 │   ├── Project.toml
 │   ├── src/
-│   │   ├── Igami2017.jl       Module entry point
+│   │   ├── MiniProject.jl     Module entry point
 │   │   ├── parameters.jl      Params struct (regional γ) + default calibration
 │   │   ├── cournot.jl         Two-market Cournot (symmetric + regional asymmetric)
 │   │   ├── state_space.jl     Regional State, CCPs, probability helpers

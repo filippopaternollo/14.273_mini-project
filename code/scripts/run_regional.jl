@@ -12,8 +12,8 @@ using Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
 
 push!(LOAD_PATH, joinpath(@__DIR__, "../src"))
-include(joinpath(@__DIR__, "../src/Igami2017.jl"))
-using .Igami2017
+include(joinpath(@__DIR__, "../src/MiniProject.jl"))
+using .MiniProject
 using Plots, Printf, DataFrames
 
 # ── Directories ──────────────────────────────────────────────────────────────
