@@ -10,6 +10,9 @@ exercise can try to recover the structural parameters (γ, κ, φ, …) that
 were used to generate it. Those parameters are deliberately **not** stored
 in the CSV.
 
+See [`estimation.md`](estimation.md) for the two-step estimator that
+consumes this dataset and recovers `(γ, κ, φ)`.
+
 ## Data-generating process
 
 The 2-period regional model:

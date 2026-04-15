@@ -23,7 +23,9 @@ mini-project/
 │   │   └── solver.jl          Sequential-move backward induction solver
 │   └── scripts/
 │       ├── run_2period.jl     Baseline agglomeration script
-│       └── run_regional.jl    Regional extension: baseline + counterfactuals
+│       ├── run_regional.jl    Regional extension: baseline + counterfactuals
+│       ├── simulate_data.jl   Simulate firm-level dataset → data/simulated_data.csv
+│       └── estimate.jl        Two-step estimator for (γ, κ, φ)
 ├── output/
 │   ├── estimates/             LaTeX \newcommand macros
 │   ├── tables/                Bare tabular .tex environments
@@ -42,6 +44,36 @@ julia --project=. scripts/run_regional.jl  # regional extension + counterfactual
 ```
 
 Outputs are written to `output/`. The writeup in `writeup/progress_agglomeration.tex` `\input`s them directly.
+
+## Estimation
+
+Two-step estimator for the unknown parameters of the regional model
+(see `notes/estimation.md` for the full derivation):
+
+1. **Simulate a dataset** (if `data/simulated_data.csv` does not already exist):
+   ```bash
+   cd code
+   julia --project=. scripts/simulate_data.jl
+   ```
+   Writes a firm-level CSV with 500 independent markets, each drawing its
+   own initial state. Ground-truth parameters are those of `default_params()`.
+
+2. **Estimate `(γ, κ, φ)`**:
+   ```bash
+   julia --project=. scripts/estimate.jl
+   ```
+   - Step 1 (NLS): `γ̂` from the deterministic Cournot block.
+   - Step 2 (MLE): `(κ̂, φ̂)` by maximizing the period-1 action
+     log-likelihood, holding `γ = γ̂`. Starting values are intentionally
+     far from the truth so the optimizer has to move through the parameter
+     space.
+   - BHHH standard errors at the optimum.
+   - LaTeX macros go to `output/estimates/estimation.txt` and a results
+     table to `output/tables/estimation.tex`.
+
+Treated as **known**: demand parameters `(A, B, M, ρ)`, old-tech cost
+`c_o`, baseline new-tech cost `c_n0`, discount factor `β`, EVT1 scale
+`σ`, and the state cap `N_max`.
 
 ## Model
 
@@ -110,7 +142,8 @@ through layered caches (`ev_old`, `ev_both`, `ev_new`, `ev_pe`).
 ## Dependencies
 
 Julia packages (all in `Project.toml`):
-- `Distributions`, `SpecialFunctions`, `Plots`, `DataFrames`, `LaTeXStrings`
+- `Distributions`, `SpecialFunctions`, `Plots`, `DataFrames`, `LaTeXStrings`,
+  `CSV`, `Optim`
 
 ## Next Steps
 

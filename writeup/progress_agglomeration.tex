@@ -9,6 +9,7 @@
 % ── Macros from estimation output ────────────────────────────────────────────
 \input{../output/estimates/2period_estimates.txt}
 \input{../output/estimates/regional_estimates.txt}
+\input{../output/estimates/estimation.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -409,6 +410,119 @@ modest, regionally targeted spillover subsidy reshapes the geographic
 distribution of innovation at the cost of a small drag on the rest of the
 world, with magnitudes that depend on the level of cannibalization $\rho$
 and the strength of the local externality $\gamma_r$.
+
+\section{Estimation on Simulated Data}
+
+As a first pass at recovering the model's structural parameters from
+data, we simulate a firm-level dataset from the regional model under
+the calibration of Table~\ref{tab:params} and then estimate
+$(\gamma, \kappa, \phi)$, treating the demand parameters, the EVT1
+scale $\sigma$, the cost $c_{n,0}$, and the state cap $N_{\max}$ as
+known.
+
+\subsection{Simulated dataset}
+
+The simulator (\texttt{code/scripts/simulate\_data.jl}) draws
+\NumMarkets\ independent markets from the 2-period regional model.
+Each market gets its own initial state
+$s_0 \sim \mathrm{unif}\{0,1,2\}^{4R}$ (rejecting empty or over-capacity
+draws), so the panel covers a range of local cluster sizes. For every
+firm in every period we record region, firm type, the two Cournot
+quantities, realised profit, and---for period~1 only---the discrete
+action. The structural parameters used to draw the data are
+deliberately \emph{not} stored in the CSV.
+
+\subsection{Two-step estimator}
+
+Because equilibrium quantities are a deterministic function of the
+state and the spillover vector $\gamma$, identification splits
+cleanly: $\gamma$ is pinned by the Cournot block and $(\kappa, \phi)$
+by the discrete actions, conditional on $\gamma$. We exploit this with
+a two-step estimator (see \texttt{notes/estimation.md} for the full
+writeup).
+
+\paragraph{Step 1 --- NLS for $\gamma$.} For each market we
+reconstruct $s_0$ and $s_1$ by counting firms of each type and region
+in the corresponding period. We then solve
+\begin{equation}
+  \widehat{\gamma} \;=\; \arg\min_{\gamma}\;
+  \sum_{m,t,r,\,\mathrm{slot}}
+  \bigl( q^{\mathrm{obs}}_{m,t,r,\mathrm{slot}}
+       - \hat{q}_{m,t,r,\mathrm{slot}}(\gamma) \bigr)^2,
+  \label{eq:nls_gamma}
+\end{equation}
+starting from $\gamma^0 = (0,0,0)$ and leaving $\gamma$
+\emph{unconstrained}. Because the simulated quantities are noiseless,
+the minimum is machine zero ($\text{SSR} = \NlsSsr$) and
+$\widehat{\gamma}$ equals the truth to all reported digits; this step
+doubles as a sanity check that state reconstruction is correct.
+
+\paragraph{Step 2 --- MLE for $(\kappa, \phi)$.} Holding
+$\gamma = \widehat{\gamma}$ fixed, we maximise the period-1 action
+log-likelihood over $(\kappa, \phi)$. The likelihood \emph{replays}
+the sequential-move order used by the solver: within each stage,
+regions act in order $r = 1 \to 2 \to 3$, and each firm's contribution
+uses the stage CCP evaluated at the sub-state its firm actually faced
+(not the marginal CCP integrated over the forward traversal). Per
+market,
+\begin{align}
+  \ell_m(\kappa, \phi)
+    &= \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{so}}_r \log p_{\mathrm{so}}(\tilde{s}^{\mathrm{OLD}}_r)
+       + k^{\mathrm{io}}_r \log p_{\mathrm{io}}(\tilde{s}^{\mathrm{OLD}}_r)
+       + k^{\mathrm{eo}}_r \log\bigl(1 - p_{\mathrm{so}} - p_{\mathrm{io}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{sb}}_r \log p_{\mathrm{sb}}(\tilde{s}^{\mathrm{BOTH}}_r)
+       + k^{\mathrm{eb}}_r \log\bigl(1 - p_{\mathrm{sb}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{sn}}_r \log p_{\mathrm{sn}}(\tilde{s}^{\mathrm{NEW}}_r)
+       + k^{\mathrm{en}}_r \log\bigl(1 - p_{\mathrm{sn}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{ep}}_r \log p_{\mathrm{ep}}(\tilde{s}^{\mathrm{PE}}_r)
+       + k^{\mathrm{op}}_r \log\bigl(1 - p_{\mathrm{ep}}\bigr)
+       \Bigr],
+  \label{eq:loglik_m}
+\end{align}
+where the $k^{\bullet}_r$ are observed action counts in region $r$ and
+the $\tilde{s}^{\bullet}_r$ are the sub-states produced by sequentially
+updating $s_0$ with the realised outcomes of earlier regions and
+stages. The total objective is
+$\ell(\kappa, \phi) = \sum_m \ell_m(\kappa, \phi)$, maximised by
+Nelder--Mead starting from
+$(\kappa^0, \phi^0) = (1.0, 1.0)$ --- intentionally far from the
+calibration so the optimiser must traverse the parameter space.
+Standard errors come from the BHHH estimator
+$V = (\sum_m g_m g_m^\prime)^{-1}$ with central finite-difference
+gradients.
+
+\subsection{Results}
+
+Table~\ref{tab:estimation} reports the estimates against the
+data-generating parameters. The two-step estimator recovers
+$\widehat{\gamma} = (\SpilloverOneHat, \SpilloverTwoHat,
+\SpilloverThreeHat)$ exactly (Step~1), and the action MLE delivers
+$\widehat{\kappa} = \InnovCostHat$
+($\text{s.e.}\,\InnovCostSe$, truth~$\InnovCostTrue$) and
+$\widehat{\phi} = \EntryCostHat$
+($\text{s.e.}\,\EntryCostSe$, truth~$\EntryCostTrue$).
+Both $\kappa$ and $\phi$ lie within roughly one standard error of
+their true values; given $\NumMarkets$ markets and a handful of
+deciders per market, this is about the precision the sample supports.
+The period-1 action log-likelihood at the optimum is $\LogLikHat$.
+
+\begin{table}[h]
+  \centering
+  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$ on
+           \NumMarkets\ simulated markets. Step~1 identifies $\gamma$
+           from Cournot quantities; Step~2 estimates $(\kappa, \phi)$
+           by period-1 action MLE conditional on $\widehat{\gamma}$.
+           Standard errors (BHHH) are reported only for the MLE step.}
+  \label{tab:estimation}
+  \input{../output/tables/estimation.tex}
+\end{table}
 
 \section{Next Steps}
 
