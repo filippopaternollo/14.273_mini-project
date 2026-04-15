@@ -1,4 +1,4 @@
-# Simulated firm-level panel (`data/simulated_panel.csv`)
+# Simulated firm-level dataset (`data/simulated_data.csv`)
 
 ## Purpose
 
@@ -48,19 +48,20 @@ and period-2 Cournot quantities/profits come from
 
 ## Initial state
 
-`s0 = State((1,1,1), (1,1,1), (0,0,0), (1,1,1))` — one old incumbent,
-one "both" incumbent, and one potential entrant per region (9 firms
-total, 6 active producers). Symmetric across regions.
+Each market draws its own s₀ independently. For every region we sample
+`n_o, n_b, n_n, n_pe` iid from `{0, 1, 2}`, reject the draw if the total
+number of active firms exceeds `N_max = 6` or if the market is empty, and
+otherwise accept. This spreads markets over a range of local cluster
+sizes so the estimator sees choice variation across states.
 
 ## Sampling scheme
 
-- `n_markets = 500` independent replications.
+- `n_markets = 500` independent replications, each with its own random s₀.
 - Fixed seed `20260414`, `MersenneTwister` RNG.
-- "`market_id`" is just a simulation id: the model has one global product
+- "`market_id`" is a simulation id: the model has one global product
   market with three regional cost types. Replications share the same
-  parameters, initial state, and equilibrium; they differ only in the
-  realized private EVT1 shocks (and hence realized actions and
-  period-2 states).
+  parameters and equilibrium but differ in their drawn s₀ and in the
+  realized private EVT1 shocks.
 
 ## Schema
 
@@ -93,10 +94,12 @@ Notes on rows:
 
 ## Sanity checks the script prints
 
-`code/scripts/simulate_data.jl` compares the empirical
-`P(innovate | old, r)` in period 1 against the solver marginal
-`solve_initial(s0, p).p_io[r]`. For n=500 these should agree within
-~0.03 (Monte-Carlo SE ≈ √(p(1-p)/n) ≈ 0.02).
+`code/scripts/simulate_data.jl` picks the first drawn market as a
+reference, solves it via `solve_initial(s0, p)`, and compares the
+empirical `P(innovate | old, r)` among that market's period-1 old firms
+to the solver marginal `ccps.p_io[r]`. With only a handful of old firms
+per market the per-region check is noisy; it is a smoke test, not a
+precise calibration.
 
 ## Regenerating
 
@@ -105,6 +108,6 @@ cd mini-project/code
 julia --project=. scripts/simulate_data.jl
 ```
 
-Output overwrites `data/simulated_panel.csv`. To change the number of
-replications, seed, or initial state, edit the constants at the top of
+Output overwrites `data/simulated_data.csv`. To change the number of
+replications or the seed, edit the constants at the top of
 `scripts/simulate_data.jl`.

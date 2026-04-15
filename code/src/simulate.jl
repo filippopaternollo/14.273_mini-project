@@ -8,9 +8,8 @@ firm's realized action from the CCP returned by the stage solver at the
 current sub-state. Period-1 and period-2 Cournot quantities and profits
 are computed from `cournot_quantities_regional` / `cournot_profits_regional`.
 
-Public entry points:
+Public entry point:
   - `simulate_market(s0, p, rng, V1, pe_ccp_cache, ev_after_pe_cache, market_id)`
-  - `simulate_panel(s0, p; n_markets, seed)`  →  `DataFrame`
 """
 
 using Random
@@ -236,22 +235,3 @@ function simulate_market(s0::State, p::Params, rng::AbstractRNG,
     return rows
 end
 
-# ---------------------------------------------------------------------------
-# Top-level: simulate many markets
-# ---------------------------------------------------------------------------
-function simulate_panel(s0::State, p::Params;
-                        n_markets::Int = 500, seed::Int = 20260414)
-    rng = MersenneTwister(seed)
-    states = all_states(p.N_max)
-    V1 = compute_terminal_values(states, p)
-    pe_ccp_cache      = Dict{Tuple{State,Int}, Float64}()
-    ev_after_pe_cache = Dict{Tuple{State,Int}, EV}()
-
-    all_rows = NamedTuple[]
-    for m in 1:n_markets
-        rows = simulate_market(s0, p, rng, V1, pe_ccp_cache, ev_after_pe_cache;
-                               market_id = m)
-        append!(all_rows, rows)
-    end
-    return DataFrame(all_rows)
-end
