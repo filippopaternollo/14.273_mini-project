@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath, amssymb}
 \usepackage{booktabs}
+\usepackage{caption}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{geometry}
@@ -18,12 +19,13 @@
 \begin{document}
 \maketitle
 
+\tableofcontents
+
 \section{Overview}
 
 This note documents the first extension of Igami (2017) to incorporate
 \textbf{innovation spillovers / agglomeration effects} in a simplified 2-period
-setting. The goal is to understand whether the presence of other innovative firms
-raises or lowers the incentive to adopt new technology.
+setting. The goal is to understand whether these effects undo the innovator's dilemma found by Igami.
 
 \section{Model}
 
@@ -60,7 +62,7 @@ is absent for pure new entrants.
         simultaneously and internalize the \textbf{cannibalization} effect --- their
         new-gen output reduces demand for their own old-gen product.
   \item \textbf{Private shocks:} Each firm draws i.i.d.\ cost shocks
-        $\varepsilon_{i,a} \sim \mathrm{Gumbel}(0, \sigma)$ for each action $a$.
+        $\varepsilon_{i,a} \sim \mathrm{EVT1}(0, \sigma)$ for each action $a$.
   \item \textbf{Discrete choices} (sequential order: old $\to$ both $\to$ new $\to$ pe):
         \begin{itemize}
           \item old: $\{\text{stay}, \text{innovate}, \text{exit}\}$
@@ -86,8 +88,7 @@ spillover / agglomeration effect).
 \subsection{Value Functions and CCPs}
 
 Because firms move sequentially within each period and each type observes the
-\emph{realized} outcomes of all earlier movers, each type's decision problem is a
-genuine \textbf{single-agent problem}: earlier-mover uncertainty has been resolved,
+\emph{realized} outcomes of all earlier movers, each type's decision problem is effectively a \textit{single-agent problem}: earlier-mover uncertainty has been resolved,
 and later-mover choices enter only through pre-computed CCPs.
 Combined with i.i.d.\ EVT1 private cost shocks, this yields closed-form logit CCPs
 at each stage:
@@ -107,7 +108,7 @@ period-opening state.
 
 \subsection{Solution Method}
 
-The model is solved by \textbf{one-pass backward induction}, following Igami (2017):
+The model is solved by {backward induction}, following Igami (2017):
 \begin{enumerate}
   \item \textbf{Terminal period ($t=1$):} $V_1(\tau, s_1) = \pi_\tau(s_1)$,
         where Cournot profits use the agglomeration-adjusted cost
@@ -118,7 +119,7 @@ The model is solved by \textbf{one-pass backward induction}, following Igami (20
         \begin{itemize}
           \item \textbf{Stage 4 (PE):} Each PE firm observes the full realized
                 intermediate state $\tilde{s}$ and solves a binary logit
-                $\{\text{enter}, \text{quit}\}$. CCPs are pre-computed for all
+                $\{\text{enter}, \text{quit}\}$. We compute CCPs for all
                 intermediate states reachable from $s_0$.
           \item \textbf{Stage 3 (new):} Each new firm solves a binary logit
                 $\{\text{stay}, \text{exit}\}$, conditioning on pre-computed PE CCPs
@@ -140,12 +141,13 @@ The model is solved by \textbf{one-pass backward induction}, following Igami (20
 
 \section{Calibration}
 
-The calibration is illustrative (not estimated from data) and is summarised in
+We summarize the parameters we use for our calibration and later to simulate the data in 
 Table~\ref{tab:params}.
 
 \begin{table}[h]
   \centering
-  \caption{Illustrative calibration}
+  \caption{Parameter values for calibration and simulation}
+  \medskip
   \label{tab:params}
   \begin{tabular}{clc}
     \toprule
@@ -178,7 +180,8 @@ $\gamma = 0$ (baseline) and $\gamma = \gammaAgglom$.
 
 \begin{table}[h]
   \centering
-  \caption{CCPs at $s_0 = (4,1,1,2)$: baseline vs.\ agglomeration ($\gamma = \gammaAgglom$)}
+  \caption{Baseline vs.\ agglomeration}
+  \medskip
   \label{tab:baseline_vs_agglom}
   \begin{tabular}{lcc}
     \toprule
@@ -188,6 +191,8 @@ $\gamma = 0$ (baseline) and $\gamma = \gammaAgglom$.
     $P(\text{enter}    \mid \text{pe})$  & \pEnterBaseline   & \pEnterAgglom   \\
     \bottomrule
   \end{tabular}
+  \caption*{\footnotesize Notes: Equilibrium CCPs at $s_0 = (4,1,1,2)$ for the
+    baseline ($\gamma = 0$) and agglomeration ($\gamma = \gammaAgglom$) specifications.}
 \end{table}
 
 Agglomeration raises both the innovation and entry rates. Intuitively, a larger
@@ -201,9 +206,12 @@ Table~\ref{tab:compstats} reports equilibrium CCPs as $\gamma$ varies from 0 to
 
 \begin{table}[h]
   \centering
-  \caption{CCPs vs.\ agglomeration parameter $\gamma$}
+  \caption{Comparative statics in $\gamma$}
+  \medskip
   \label{tab:compstats}
   \input{../output/tables/comp_stats_agglomeration.tex}
+  \caption*{\footnotesize Notes: Equilibrium CCPs at $s_0 = (4,1,1,2)$ as the
+    agglomeration parameter $\gamma$ varies from 0 to 0.30.}
 \end{table}
 
 \begin{figure}[h]
@@ -241,7 +249,7 @@ Three features of the comparative statics are notable:
         profit falls from $\approx 0.531$ at $\rho=0$ to $\approx 0.327$ at
         $\rho=0.5$. This is the central mechanism in Igami (2017): incumbents are
         reluctant to innovate because doing so cannibalizes their existing
-        old-gen revenue.
+        old-gen revenue. However, the relation is nonmonotone: as $\rho$ approaches 1, the two markets become nearly homogeneous and the incumbent benefits from innovating because it can sell more of the new-gen product.
   \item \textbf{Saturation:} The innovation rate saturates near $1/3$ for large
         $\gamma$. This is a feature of the EVT1 / logit structure: with large
         $\sigma$ relative to payoff differences, all actions approach equal
@@ -249,7 +257,7 @@ Three features of the comparative statics are notable:
         be more pronounced.
 \end{enumerate}
 
-\section{Regional Extension and Counterfactuals}
+\section{Regional Extension}
 
 \subsection{Regional Structure}
 
@@ -320,7 +328,7 @@ observing anyone, while region~3 best-responds to the realised history; the
 gap is $\le 10^{-3}$ in all experiments and does not affect any of the
 counterfactual comparisons.
 
-\subsection{Baseline and Counterfactuals}
+\subsection{Baseline and comparative statics}
 
 We solve the regional model at two initial states, both with total firm
 count 6:
@@ -341,10 +349,10 @@ sequential region-move structure discussed above rather than any substantive
 break in the model's permutation symmetry when the state and parameters are
 symmetric.
 
-Two counterfactuals are then run against this baseline.
-\textbf{Counterfactual~A} subsidises innovation in region~1 by tripling its
+Two comparative statics are then run against this baseline.
+\textbf{Comparative Static~A} subsidises innovation in region~1 by tripling its
 agglomeration strength to $\gamma_1 = \gammaSubsidyOne$ while leaving
-$\gamma_2 = \gamma_3 = \gammaOther$. \textbf{Counterfactual~B} holds
+$\gamma_2 = \gamma_3 = \gammaOther$. \textbf{Comparative Static~B} holds
 $\gamma_r$ uniform but starts from the clustered initial state
 $s_0^{\mathrm{clust}}$, asking whether a historical concentration of
 innovators is enough to lock in innovation leadership even without a policy
@@ -352,12 +360,15 @@ tilt.
 
 \begin{table}[h]
   \centering
-  \caption{Regional innovation CCPs $P(\text{innovate}\mid\text{old}, r)$
-           at each scenario.  Baseline uses $s_0^{\mathrm{sym}}$ with
-           uniform $\gamma = \gammaOther$; CF-A sets
-           $\gamma_1 = \gammaSubsidyOne$; CF-B uses $s_0^{\mathrm{clust}}$.}
-  \label{tab:regional_counterfactuals}
+  \caption{Regional innovation CCPs by scenario}
+  \medskip
+  \label{tab:regional_comparative_statics}
   \input{../output/tables/regional_comp_stats.tex}
+  \caption*{\footnotesize Notes: Reports $P(\text{innovate}\mid\text{old}, r)$ for
+    each region. Baseline uses $s_0^{\mathrm{sym}}$ with uniform
+    $\gamma = \gammaOther$; CS-A sets $\gamma_1 = \gammaSubsidyOne$ (regions~2
+    and~3 held at $\gammaOther$); CS-B uses the clustered initial state
+    $s_0^{\mathrm{clust}}$ with uniform $\gamma = \gammaOther$.}
 \end{table}
 
 \begin{figure}[h]
@@ -372,7 +383,7 @@ tilt.
 
 \subsection{Discussion}
 
-Three findings stand out in Table~\ref{tab:regional_counterfactuals} and
+Three findings stand out in Table~\ref{tab:regional_comparative_statics} and
 Figure~\ref{fig:regional_subsidy}:
 
 \begin{enumerate}
@@ -517,27 +528,29 @@ The period-1 action log-likelihood at the optimum is $\LogLikHat$.
 
 \begin{table}[h]
   \centering
-  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$ on
-           \NumMarkets\ simulated markets. Step~1 identifies $\gamma$
-           from Cournot quantities; Step~2 estimates $(\kappa, \phi)$
-           by period-1 action MLE conditional on $\widehat{\gamma}$.
-           Standard errors (BHHH) are reported only for the MLE step.}
+  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$}
+  \medskip
   \label{tab:estimation}
   \input{../output/tables/estimation.tex}
+  \caption*{\footnotesize Notes: Estimates from \NumMarkets\ simulated markets.
+    Step~1 identifies $\gamma$ from Cournot quantities; Step~2 estimates
+    $(\kappa, \phi)$ by period-1 action MLE conditional on $\widehat{\gamma}$.
+    Standard errors (BHHH) are reported only for the MLE step.}
 \end{table}
 
-\section{Next Steps}
+\section{Next Steps: Counterfactuals}
 
 \begin{enumerate}
-  \item Replace the illustrative calibration with Igami's (2017) structural
-        estimates (Table 3 of the paper).
-  \item Extend to $T > 2$ periods (the HDD panel spans 1977--1999).
-  \item Richer counterfactuals on the regional branch: bilateral
-        spillover pools (e.g.\ regions 1--2 share an enlarged effective
-        $N^{\mathrm{inn}}$), endogenous region choice at entry, and a
-        welfare accounting that nets consumer surplus against the fiscal
-        cost of the subsidy.
-  \item Study welfare and industrial policy implications (e.g., R\&D subsidies).
+  \item \textbf{Bilateral spillover pools.} Allow neighbouring regions to
+        share an enlarged effective innovator pool (e.g.\ regions~1 and~2
+        pool their $N^{\mathrm{inn}}$), and trace how cross-regional
+        knowledge flows reshape the leakage pattern documented in
+        Table~\ref{tab:regional_comparative_statics}.
+  \item \textbf{Welfare and industrial policy.} Compute consumer surplus,
+        producer surplus, and fiscal cost under the region-1 subsidy of
+        Comparative Static~A, and report the net welfare change to assess
+        whether targeted R\&D subsidies are justified once the global
+        Cournot spillover is priced in.
 \end{enumerate}
 
 \end{document}
