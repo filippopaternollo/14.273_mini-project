@@ -82,9 +82,12 @@ function solve_pe_region(s::State, r::Int, V1::Dict{State,EV}, p::Params,
             lp = log_binomial_prob(n - 1, v, p_r)
             lp == -Inf && continue
             prob = exp(lp)
+            # PE firms are one-shot: after region r resolves, all of its
+            # potential entrants are gone (entered or stayed out), matching
+            # the simulator's add_i(s.n_pe, r, -length(deciders)).
             s_next = State(s.n_o, s.n_b,
-                           add_i(s.n_n, r,  (v + 1)),
-                           add_i(s.n_pe, r, -(v + 1)))
+                           add_i(s.n_n, r, v + 1),
+                           set_i(s.n_pe, r, 0))
             ev = ev_after_pe_region(s_next, r + 1, V1, p, C)
             u_enter += p.beta * prob * ev.new[r]
         end
@@ -119,9 +122,11 @@ function ev_after_pe_region(s::State, r::Int, V1::Dict{State,EV},
         lp = log_binomial_prob(n, v, p_r)
         lp == -Inf && continue
         prob = exp(lp)
+        # All PE firms in region r are gone after the region resolves
+        # (v entered, the rest stayed out). Mirrors the simulator.
         s_next = State(s.n_o, s.n_b,
-                       add_i(s.n_n, r,  v),
-                       add_i(s.n_pe, r, -v))
+                       add_i(s.n_n, r, v),
+                       set_i(s.n_pe, r, 0))
         ev = ev_after_pe_region(s_next, r + 1, V1, p, C)
         for k in 1:R
             old[k]  += prob * ev.old[k]
@@ -386,9 +391,10 @@ function traverse_pe!(s::State, r::Int, w::Float64, ctx::SolveContext,
         lp = log_binomial_prob(n, v, p_r)
         lp == -Inf && continue
         prob = exp(lp)
+        # PE firms are one-shot: zero out n_pe[r] after the region resolves.
         s_next = State(s.n_o, s.n_b,
-                       add_i(s.n_n, r,  v),
-                       add_i(s.n_pe, r, -v))
+                       add_i(s.n_n, r, v),
+                       set_i(s.n_pe, r, 0))
         traverse_pe!(s_next, r + 1, w * prob, ctx, V1, p, C, mep)
     end
 end

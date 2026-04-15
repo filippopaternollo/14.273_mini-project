@@ -204,7 +204,12 @@ function loglik_market(m::MarketData, p::Params, V1::Dict{State,EV})
     )
 
     ll = 0.0
-    _safelog(x) = x <= 0.0 ? -1e12 : log(x)
+    # Clamp probabilities into [eps, 1 - eps] before taking logs so the
+    # likelihood stays well-scaled (log(eps()) ≈ -36) and finite-difference
+    # gradients remain numerically meaningful even when a stage CCP hits a
+    # boundary. This avoids the magic-constant penalty of a hand-coded
+    # sentinel and keeps BHHH SEs well-defined.
+    _safelog(x) = log(clamp(x, eps(Float64), 1.0 - eps(Float64)))
 
     # OLD stage
     for r in 1:R
