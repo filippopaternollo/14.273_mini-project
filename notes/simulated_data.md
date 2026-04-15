@@ -51,11 +51,14 @@ and period-2 Cournot quantities/profits come from
 
 ## Initial state
 
-Each market draws its own s₀ independently. For every region we sample
-`n_o, n_b, n_n, n_pe` iid from `{0, 1, 2}`, reject the draw if the total
-number of active firms exceeds `N_max = 6` or if the market is empty, and
-otherwise accept. This spreads markets over a range of local cluster
-sizes so the estimator sees choice variation across states.
+Each market draws its own s₀ independently via `random_s0(rng, p)`
+(see `code/src/simulate.jl`). For every region we sample
+`n_o, n_b, n_n, n_pe` iid from `{0, 1, 2}`, reject the draw if the market
+is empty or if the **total** firm count (active *plus* potential entrants)
+exceeds `N_max = 6`, and otherwise accept. The bound matches
+`all_states(p.N_max)`, which enumerates states with
+`total_firms(s) ≤ N_max`, so every drawn `s0` is guaranteed to live in
+the enumerated state space.
 
 ## Sampling scheme
 

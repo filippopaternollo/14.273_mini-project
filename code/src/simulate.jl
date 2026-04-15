@@ -8,12 +8,39 @@ firm's realized action from the CCP returned by the stage solver at the
 current sub-state. Period-1 and period-2 Cournot quantities and profits
 are computed from `cournot_quantities_regional` / `cournot_profits_regional`.
 
-Public entry point:
+Public entry points:
   - `simulate_market(s0, p, rng, V1, pe_ccp_cache, ev_after_pe_cache, market_id)`
+  - `random_s0(rng, p)`  — draw a random initial state inside the state space
 """
 
 using Random
 using DataFrames
+
+# ---------------------------------------------------------------------------
+# Random initial state
+# ---------------------------------------------------------------------------
+"""
+    random_s0(rng, p; max_per_slot = 2)
+
+Draw each region's `(n_o, n_b, n_n, n_pe)` i.i.d. from `0..max_per_slot`,
+rejecting the draw if the market is empty or if the implied total firm
+count (active + potential entrants) exceeds `p.N_max`. The upper bound
+matches `all_states(p.N_max)`, which enumerates every state with
+`total_firms(s) ≤ N_max`, so the returned `s0` is guaranteed to live in
+the enumerated state space.
+"""
+function random_s0(rng::AbstractRNG, p::Params; max_per_slot::Int = 2)
+    while true
+        n_o  = ntuple(_ -> rand(rng, 0:max_per_slot), R)
+        n_b  = ntuple(_ -> rand(rng, 0:max_per_slot), R)
+        n_n  = ntuple(_ -> rand(rng, 0:max_per_slot), R)
+        n_pe = ntuple(_ -> rand(rng, 0:max_per_slot), R)
+        total = sum(n_o) + sum(n_b) + sum(n_n) + sum(n_pe)
+        total == 0 && continue
+        total > p.N_max && continue
+        return State(n_o, n_b, n_n, n_pe)
+    end
+end
 
 # ---------------------------------------------------------------------------
 # Firm bookkeeping

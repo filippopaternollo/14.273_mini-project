@@ -23,22 +23,6 @@ const DATA_DIR = joinpath(@__DIR__, "../../data")
 mkpath(DATA_DIR)
 const CSV_PATH = joinpath(DATA_DIR, "simulated_data.csv")
 
-# ── Random initial state ─────────────────────────────────────────────────────
-# Draw each region's (n_o, n_b, n_n, n_pe) iid from 0..2, reject if the
-# implied total exceeds N_max or the market is empty.
-function random_s0(rng::AbstractRNG, p::Params)
-    while true
-        n_o  = ntuple(_ -> rand(rng, 0:2), R)
-        n_b  = ntuple(_ -> rand(rng, 0:2), R)
-        n_n  = ntuple(_ -> rand(rng, 0:2), R)
-        n_pe = ntuple(_ -> rand(rng, 0:2), R)
-        total = sum(n_o) + sum(n_b) + sum(n_n) + sum(n_pe)
-        total == 0 && continue
-        sum(n_o) + sum(n_b) + sum(n_n) > p.N_max && continue
-        return State(n_o, n_b, n_n, n_pe)
-    end
-end
-
 # ── Simulate ─────────────────────────────────────────────────────────────────
 p = default_params()
 rng = MersenneTwister(SEED)

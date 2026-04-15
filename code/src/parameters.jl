@@ -20,7 +20,7 @@ struct Params
     sigma::Float64                  # scale of EVT1 private cost shocks
     gamma::NTuple{R,Float64}        # per-region agglomeration parameters (γ_r ≥ 0)
     rho::Float64                    # cross-market substitution: S = rho*B; rho ∈ [0,1)
-    N_max::Int                      # max total active firms (bounds state space)
+    N_max::Int                      # max total firms incl. potential entrants (bounds state space)
 end
 
 """

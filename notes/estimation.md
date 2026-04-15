@@ -111,17 +111,17 @@ SEs reflect step-2 sampling variation only.
 
 | Parameter | Truth   | Estimate | S.E.    |
 | --------- | ------- | -------- | ------- |
-| κ         | 0.3000  | 0.3470   | 0.0773  |
-| φ         | 0.2000  | 0.2307   | 0.0545  |
+| κ         | 0.3000  | 0.2849   | 0.0815  |
+| φ         | 0.2000  | 0.1635   | 0.0792  |
 | γ₁        | 0.0500  | 0.0500   |  —      |
 | γ₂        | 0.0500  | 0.0500   |  —      |
 | γ₃        | 0.0500  | 0.0500   |  —      |
 
 NLS SSR at `γ̂`: ~1e-13 (machine zero, as expected for noiseless
-data). Log-likelihood at the optimum: ≈ −3181.4.  Both `κ̂` and `φ̂`
+data). Log-likelihood at the optimum: ≈ −2079.2.  Both `κ̂` and `φ̂`
 are within ~1 standard error of their true values; with only 500
-markets and handful of deciders per market this is about the precision
-we should expect.
+markets and a handful of deciders per market this is about the
+precision we should expect.
 
 The same numbers are available as LaTeX macros in
 `output/estimates/estimation.txt` and as a tabular in
