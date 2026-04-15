@@ -135,7 +135,7 @@ through layered caches (`ev_old`, `ev_both`, `ev_new`, `ev_pe`).
 - Effect saturates near γ≈0.2 due to EVT1 / logit structure
 
 **Regional extension** (symmetric s₀, uniform γ=0.05 unless stated):
-- Baseline: P(innovate|old, r) = 0.3331 for all r (symmetry check)
+- Baseline: P(innovate|old, r) is nearly symmetric but not exactly equal under sequential within-stage region ordering: r1 ≈ 0.3333, r2 ≈ 0.3330, r3 ≈ 0.3326
 - Subsidize region 1 (γ=(0.15, 0.05, 0.05)): r1 rises to 0.359, r2/r3 fall to 0.326 via global-Cournot drag
 - Clustered innovators (3 in r1): r1 barely moves (0.337 — spillover saturated), r2/r3 fall to 0.323
 

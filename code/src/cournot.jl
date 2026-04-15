@@ -221,7 +221,7 @@ function _solve_regional_quantities(n_o::NTuple{R,Int}, n_b::NTuple{R,Int},
             act_nn[r] && push!(vars, (:nn, r))
         end
         k = length(vars)
-        k == 0 && return (zero_tuple, zero_tuple, zero_tuple)
+        k == 0 && return (zero_v(), zero_v(), zero_v(), zero_v())
 
         idx = Dict{Tuple{Symbol,Int}, Int}()
         for (i, v) in enumerate(vars); idx[v] = i; end
