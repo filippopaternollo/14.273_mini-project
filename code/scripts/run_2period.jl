@@ -12,9 +12,9 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 Pkg.instantiate()
 
 push!(LOAD_PATH, joinpath(@__DIR__, "../src"))
-include(joinpath(@__DIR__, "../src/Igami2017.jl"))
-using .Igami2017
-import .Igami2017: State, Params, StateCCPs, default_params, solve_2period, cournot_profits  # ← add this
+include(joinpath(@__DIR__, "../src/MiniProject.jl"))
+using .MiniProject
+import .MiniProject: State, Params, StateCCPs, default_params, solve_2period, cournot_profits
 using Plots, Plots.PlotMeasures, Printf, DataFrames
 
 # ── Directories ──────────────────────────────────────────────────────────────

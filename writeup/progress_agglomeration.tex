@@ -8,6 +8,8 @@
 
 % ── Macros from estimation output ────────────────────────────────────────────
 \input{../output/estimates/2period_estimates.txt}
+\input{../output/estimates/regional_estimates.txt}
+\input{../output/estimates/estimation.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -247,67 +249,282 @@ Three features of the comparative statics are notable:
         be more pronounced.
 \end{enumerate}
 
-\section{Counterfactuals}
+\section{Regional Extension and Counterfactuals}
 
 \subsection{Regional Structure}
 
-To study the interaction between industrial policy and agglomeration, we extend the
-model to three geographic clusters: the United States, Europe, and Asia.
-Product market competition remains \textbf{global} --- all firms compete in the same
-Cournot game regardless of location --- but agglomeration spillovers are
-\textbf{local}:
+To study the interaction between industrial policy and agglomeration we extend
+the state space with a \textbf{region} attribute. There are $R = 3$ regions
+(labelled $r \in \{1,2,3\}$); each firm is born into a region and never leaves
+it, and potential entrants sit in per-region pools $n_{pe,r}$. Product-market
+competition remains \textbf{global} --- all active firms meet in the same
+two-market Cournot game of
+equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} --- but agglomeration
+spillovers are now \textbf{local}:
 \begin{equation}
-  c_{n,t}^{(g)} = c_{n,0} - \gamma \cdot N^{\mathrm{inn}}_{g,t}, \qquad
-  N^{\mathrm{inn}}_{g,t} = n_{b,g,t} + n_{n,g,t},
+  c_{n,r,t} = c_{n,0} - \gamma_r \cdot \bigl(n_{b,r,t} + n_{n,r,t}\bigr),
+  \qquad r = 1,\dots,R.
   \label{eq:local_agglom}
 \end{equation}
-where $g \in \{\text{US}, \text{EU}, \text{Asia}\}$ is a firm's region and
-$N^{\mathrm{inn}}_{g,t}$ counts only same-region innovative firms.
+Because $c_{n,r,t}$ varies across regions, firms of type ``both'' and ``new''
+face \emph{heterogeneous} marginal costs in the new-gen market. The Cournot
+stage therefore loses symmetry across regions, and equilibrium quantities are
+obtained by solving an asymmetric FOC system of up to $4R$ equations per
+state. Within-region slots remain symmetric (all firms in the same
+$(type, r)$ cell pick the same quantity), so per-firm profits are still
+characterised by $\pi_{o,r} = b q_{oo,r}^2$, $\pi_{n,r} = b q_{nn,r}^2$, and
+$\pi_{b,r} = b(q_{bo,r}^2 + q_{bn,r}^2) + 2 s\, q_{bo,r} q_{bn,r}$ where
+$b = B/M$ and $s = \rho B/M$.
 
-Each firm privately captures the lower cost when it innovates, but does not
+Each firm privately captures the lower cost when it innovates but does not
 internalize the benefit it confers on regional peers --- a standard
-\textbf{agglomeration externality} that creates a wedge between the social and
-private return to innovation.
+\textbf{local agglomeration externality} that creates a wedge between the
+social and private return to innovation and opens the door to regionally
+targeted industrial policy.
 
-\subsection{Counterfactual 1: Asian Industrial Policy}
+\subsection{Solution with Regional States}
 
-Asia subsidizes innovation to correct the regional agglomeration externality.
-The first-best Pigouvian subsidy per innovating firm equals the marginal social
-benefit it confers on regional peers:
+The sequential-move structure (old $\to$ both $\to$ new $\to$ pe) carries
+over unchanged, and we extend the same idea one level down: \textbf{within
+each stage, regions move sequentially}, $r = 1 \to 2 \to 3$. When firms in
+region~$r$ decide, they observe the realized outcome of regions
+$1,\dots,r-1$ and integrate over the (yet-to-play) strategies of regions
+$r+1,\dots,R$. This is the regional analogue of Igami's cross-type
+sequencing: it makes every sub-stage a single-agent problem whose CCP is a
+\emph{scalar} fixed point rather than a joint fixed point across regions,
+and it removes any coupling in the solver between regions at the same
+stage.
+
+Concretely, we solve each stage in reverse region order. Region~$R$'s
+scalar FP is computed first for every reachable sub-state, and cached.
+Region~$R-1$'s FP is then computed given the cached region-$R$ continuation,
+and so on down to region~$1$. Across stages, the usual layered caches still
+apply: stage-4 (PE) depends only on the post-new-stage state and is reused
+across initial states via
+$\mathrm{EV}_{\mathrm{after\,pe}}[s_{an}, r]$; stages~3, 2, 1 cascade through
+$\mathrm{EV}_{\mathrm{after\,new}}$, $\mathrm{EV}_{\mathrm{after\,both}}$,
+and $\mathrm{EV}_{\mathrm{after\,old}}$, each keyed by
+$(\text{State}, r)$. Because each sub-state's CCP is a function of the
+realized history, the per-region CCPs reported in the results below are
+\emph{marginalised} over the equilibrium play of earlier-moving regions,
+computed by a forward traversal of the sub-stage tree.
+
+Because the state space now has $4R = 12$ integer coordinates, we cap
+$N_{\max} = 6$ on this branch (about $1.8\times 10^4$ enumerated states) and
+pick initial states with total firm count $\le 6$. One visible artefact of
+the sequential-move convention is a small first-mover asymmetry in the
+baseline: with uniform $\gamma_r = 0.05$ the reported innovation CCPs are
+$(0.3333, 0.3330, 0.3326)$ rather than the exactly-symmetric values one
+would get under simultaneous moves within a stage. Region~1 commits without
+observing anyone, while region~3 best-responds to the realised history; the
+gap is $\le 10^{-3}$ in all experiments and does not affect any of the
+counterfactual comparisons.
+
+\subsection{Baseline and Counterfactuals}
+
+We solve the regional model at two initial states, both with total firm
+count 6:
+\begin{itemize}
+  \item \textbf{Symmetric $s_0$:} $s_0^{\mathrm{sym}} =
+        \bigl((1,1,1), (1,1,1), (0,0,0), (0,0,0)\bigr)$ --- one old incumbent
+        and one ``both'' incumbent in each region, no entrants.
+  \item \textbf{Clustered $s_0$:} $s_0^{\mathrm{clust}} =
+        \bigl((1,1,1), (3,0,0), (0,0,0), (0,0,0)\bigr)$ --- same number of
+        firms of each type, but all three ``both'' incumbents are
+        concentrated in region~1.
+\end{itemize}
+
+Starting from $s_0^{\mathrm{sym}}$ with uniform $\gamma_r = 0.05$ we verify a
+\textbf{symmetry check}: the three regions' CCPs are nearly identical, with
+only tiny differences (on the order of $10^{-3}$) that reflect the
+sequential region-move structure discussed above rather than any substantive
+break in the model's permutation symmetry when the state and parameters are
+symmetric.
+
+Two counterfactuals are then run against this baseline.
+\textbf{Counterfactual~A} subsidises innovation in region~1 by tripling its
+agglomeration strength to $\gamma_1 = \gammaSubsidyOne$ while leaving
+$\gamma_2 = \gamma_3 = \gammaOther$. \textbf{Counterfactual~B} holds
+$\gamma_r$ uniform but starts from the clustered initial state
+$s_0^{\mathrm{clust}}$, asking whether a historical concentration of
+innovators is enough to lock in innovation leadership even without a policy
+tilt.
+
+\begin{table}[h]
+  \centering
+  \caption{Regional innovation CCPs $P(\text{innovate}\mid\text{old}, r)$
+           at each scenario.  Baseline uses $s_0^{\mathrm{sym}}$ with
+           uniform $\gamma = \gammaOther$; CF-A sets
+           $\gamma_1 = \gammaSubsidyOne$; CF-B uses $s_0^{\mathrm{clust}}$.}
+  \label{tab:regional_counterfactuals}
+  \input{../output/tables/regional_comp_stats.tex}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/regional_subsidy.pdf}
+  \caption{Regional innovation rates as $\gamma_1$ varies while
+           $\gamma_2 = \gamma_3 = \gammaOther$ is held fixed.  Region~1
+           responds positively to its own subsidy; regions~2 and~3 are
+           slightly depressed through the global Cournot channel.}
+  \label{fig:regional_subsidy}
+\end{figure}
+
+\subsection{Discussion}
+
+Three findings stand out in Table~\ref{tab:regional_counterfactuals} and
+Figure~\ref{fig:regional_subsidy}:
+
+\begin{enumerate}
+  \item \textbf{Targeted subsidies work, but leak.} Raising $\gamma_1$ from
+        \gammaOther\ to \gammaSubsidyOne\ moves region~1's innovation
+        probability from \pInnovBaselineROne\ to \pInnovSubsidyROne, a
+        \pInnovBaselineROne-to-\pInnovSubsidyROne\ gain of roughly two and
+        a half percentage points. Regions~2 and~3 fall from
+        \pInnovBaselineRTwo\ to \pInnovSubsidyRTwo --- a small but clearly
+        negative spillover driven entirely by the \emph{global} product
+        market: more innovation in region~1 lowers expected new-gen prices
+        everywhere, eroding the option value of innovating in the other
+        regions.
+  \item \textbf{Historical clusters alone are weak.} Starting from
+        $s_0^{\mathrm{clust}}$ the incumbent cluster in region~1 barely
+        moves innovation there
+        ($\pInnovClusterROne$ vs.\ $\pInnovBaselineROne$ in the symmetric
+        baseline): with only one remaining old firm in region~1, the
+        region's marginal old firm is already close to saturating its own
+        local spillover. The larger effect shows up in regions~2 and~3,
+        whose CCPs fall to $\pInnovClusterRTwo$ because of the global-market
+        pressure from the concentrated region-1 innovators. A one-shot
+        historical endowment is therefore a much weaker policy lever than a
+        continuing subsidy.
+  \item \textbf{The spillover wedge is still local.} Comparing CF-A and
+        CF-B makes clear that what drives region~1's innovation is not how
+        many innovators are in the region today but the
+        \emph{marginal reduction in new-tech cost} each additional
+        innovator delivers. The policy CF-A tilts that reduction directly,
+        which is why it dominates a pure history-based CF-B at the same
+        total cluster size.
+\end{enumerate}
+
+The two experiments illustrate how the regional model bridges Igami's
+replacement-effect story with the industrial-policy literature: even a
+modest, regionally targeted spillover subsidy reshapes the geographic
+distribution of innovation at the cost of a small drag on the rest of the
+world, with magnitudes that depend on the level of cannibalization $\rho$
+and the strength of the local externality $\gamma_r$.
+
+\section{Estimation on Simulated Data}
+
+As a first pass at recovering the model's structural parameters from
+data, we simulate a firm-level dataset from the regional model under
+the calibration of Table~\ref{tab:params} and then estimate
+$(\gamma, \kappa, \phi)$, treating the demand parameters, the EVT1
+scale $\sigma$, the cost $c_{n,0}$, and the state cap $N_{\max}$ as
+known.
+
+\subsection{Simulated dataset}
+
+The simulator (\texttt{code/scripts/simulate\_data.jl}) draws
+\NumMarkets\ independent markets from the 2-period regional model.
+Each market gets its own initial state
+$s_0 \sim \mathrm{unif}\{0,1,2\}^{4R}$ (rejecting empty or over-capacity
+draws), so the panel covers a range of local cluster sizes. For every
+firm in every period we record region, firm type, the two Cournot
+quantities, realised profit, and---for period~1 only---the discrete
+action. The structural parameters used to draw the data are
+deliberately \emph{not} stored in the CSV.
+
+\subsection{Two-step estimator}
+
+Because equilibrium quantities are a deterministic function of the
+state and the spillover vector $\gamma$, identification splits
+cleanly: $\gamma$ is pinned by the Cournot block and $(\kappa, \phi)$
+by the discrete actions, conditional on $\gamma$. We exploit this with
+a two-step estimator (see \texttt{notes/estimation.md} for the full
+writeup).
+
+\paragraph{Step 1 --- NLS for $\gamma$.} For each market we
+reconstruct $s_0$ and $s_1$ by counting firms of each type and region
+in the corresponding period. We then solve
 \begin{equation}
-  \tau^*_{\mathrm{Asia}} = \gamma \cdot \frac{\partial N^{\mathrm{inn}}_{\mathrm{Asia}}}
-                                              {\partial \mathbf{1}[\text{innovate}]}
-  = \gamma \cdot N^{\mathrm{inn}}_{\mathrm{Asia}},
+  \widehat{\gamma} \;=\; \arg\min_{\gamma}\;
+  \sum_{m,t,r,\,\mathrm{slot}}
+  \bigl( q^{\mathrm{obs}}_{m,t,r,\mathrm{slot}}
+       - \hat{q}_{m,t,r,\mathrm{slot}}(\gamma) \bigr)^2,
+  \label{eq:nls_gamma}
 \end{equation}
-i.e., each additional Asian innovator reduces the new-tech cost for all existing
-regional innovators by $\gamma$, so the subsidy is increasing in the cluster size.
+starting from $\gamma^0 = (0,0,0)$ and leaving $\gamma$
+\emph{unconstrained}. Because the simulated quantities are noiseless,
+the minimum is machine zero ($\text{SSR} = \NlsSsr$) and
+$\widehat{\gamma}$ equals the truth to all reported digits; this step
+doubles as a sanity check that state reconstruction is correct.
 
-The key qualitative prediction is an \textbf{agglomeration spiral}: the subsidy
-raises Asian innovation rates, which enlarges $N^{\mathrm{inn}}_{\mathrm{Asia}}$,
-which further lowers costs and attracts more innovation, tilting the long-run global
-industry composition toward Asia. Because competition is global, this comes partly
-at the expense of US and European firms whose market shares decline.
+\paragraph{Step 2 --- MLE for $(\kappa, \phi)$.} Holding
+$\gamma = \widehat{\gamma}$ fixed, we maximise the period-1 action
+log-likelihood over $(\kappa, \phi)$. The likelihood \emph{replays}
+the sequential-move order used by the solver: within each stage,
+regions act in order $r = 1 \to 2 \to 3$, and each firm's contribution
+uses the stage CCP evaluated at the sub-state its firm actually faced
+(not the marginal CCP integrated over the forward traversal). Per
+market,
+\begin{align}
+  \ell_m(\kappa, \phi)
+    &= \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{so}}_r \log p_{\mathrm{so}}(\tilde{s}^{\mathrm{OLD}}_r)
+       + k^{\mathrm{io}}_r \log p_{\mathrm{io}}(\tilde{s}^{\mathrm{OLD}}_r)
+       + k^{\mathrm{eo}}_r \log\bigl(1 - p_{\mathrm{so}} - p_{\mathrm{io}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{sb}}_r \log p_{\mathrm{sb}}(\tilde{s}^{\mathrm{BOTH}}_r)
+       + k^{\mathrm{eb}}_r \log\bigl(1 - p_{\mathrm{sb}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{sn}}_r \log p_{\mathrm{sn}}(\tilde{s}^{\mathrm{NEW}}_r)
+       + k^{\mathrm{en}}_r \log\bigl(1 - p_{\mathrm{sn}}\bigr)
+       \Bigr] \notag \\
+    &\quad + \sum_{r=1}^{R}\Bigl[
+         k^{\mathrm{ep}}_r \log p_{\mathrm{ep}}(\tilde{s}^{\mathrm{PE}}_r)
+       + k^{\mathrm{op}}_r \log\bigl(1 - p_{\mathrm{ep}}\bigr)
+       \Bigr],
+  \label{eq:loglik_m}
+\end{align}
+where the $k^{\bullet}_r$ are observed action counts in region $r$ and
+the $\tilde{s}^{\bullet}_r$ are the sub-states produced by sequentially
+updating $s_0$ with the realised outcomes of earlier regions and
+stages. The total objective is
+$\ell(\kappa, \phi) = \sum_m \ell_m(\kappa, \phi)$, maximised by
+Nelder--Mead starting from
+$(\kappa^0, \phi^0) = (1.0, 1.0)$ --- intentionally far from the
+calibration so the optimiser must traverse the parameter space.
+Standard errors come from the BHHH estimator
+$V = (\sum_m g_m g_m^\prime)^{-1}$ with central finite-difference
+gradients.
 
-\subsection{Counterfactual 2: EU--US Knowledge Integration}
+\subsection{Results}
 
-The EU and US agree to pool their innovation spillovers --- perhaps through a
-bilateral R\&D treaty or joint research infrastructure. Formally, the effective
-cluster size for both blocs becomes:
-\begin{equation}
-  \tilde{N}^{\mathrm{inn}}_{\mathrm{EU+US},t}
-  = n_{b,\mathrm{EU},t} + n_{n,\mathrm{EU},t}
-  + n_{b,\mathrm{US},t} + n_{n,\mathrm{US},t}.
-\end{equation}
-Because the integrated cluster is larger, the new-tech cost for EU and US firms
-falls by more than under the autarkic baseline, raising innovation rates in both
-regions. Asia, whose spillovers remain local, sees its relative cost advantage
-eroded, reshaping global industry geography in the opposite direction from
-Counterfactual 1.
+Table~\ref{tab:estimation} reports the estimates against the
+data-generating parameters. The two-step estimator recovers
+$\widehat{\gamma} = (\SpilloverOneHat, \SpilloverTwoHat,
+\SpilloverThreeHat)$ exactly (Step~1), and the action MLE delivers
+$\widehat{\kappa} = \InnovCostHat$
+($\text{s.e.}\,\InnovCostSe$, truth~$\InnovCostTrue$) and
+$\widehat{\phi} = \EntryCostHat$
+($\text{s.e.}\,\EntryCostSe$, truth~$\EntryCostTrue$).
+Both $\kappa$ and $\phi$ lie within roughly one standard error of
+their true values; given $\NumMarkets$ markets and a handful of
+deciders per market, this is about the precision the sample supports.
+The period-1 action log-likelihood at the optimum is $\LogLikHat$.
 
-The two counterfactuals together illustrate the \textbf{strategic complementarity}
-between agglomeration policy and geography: the equilibrium industry location depends
-on which region acts first to internalize the externality or to deepen cross-border
-knowledge flows.
+\begin{table}[h]
+  \centering
+  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$ on
+           \NumMarkets\ simulated markets. Step~1 identifies $\gamma$
+           from Cournot quantities; Step~2 estimates $(\kappa, \phi)$
+           by period-1 action MLE conditional on $\widehat{\gamma}$.
+           Standard errors (BHHH) are reported only for the MLE step.}
+  \label{tab:estimation}
+  \input{../output/tables/estimation.tex}
+\end{table}
 
 \section{Next Steps}
 
@@ -315,9 +532,11 @@ knowledge flows.
   \item Replace the illustrative calibration with Igami's (2017) structural
         estimates (Table 3 of the paper).
   \item Extend to $T > 2$ periods (the HDD panel spans 1977--1999).
-  \item Add the \textbf{spatial / geographic} version of agglomeration:
-        $c_{n,t}^{(g)} = c_{n,0} - \gamma \cdot N^{\mathrm{inn}}_{g(i),t}$,
-        where $g(i)$ is firm $i$'s location cluster.
+  \item Richer counterfactuals on the regional branch: bilateral
+        spillover pools (e.g.\ regions 1--2 share an enlarged effective
+        $N^{\mathrm{inn}}$), endogenous region choice at entry, and a
+        welfare accounting that nets consumer surplus against the fiscal
+        cost of the subsidy.
   \item Study welfare and industrial policy implications (e.g., R\&D subsidies).
 \end{enumerate}
 

@@ -1,203 +1,533 @@
 """
-2-period backward induction solver for the Igami model with sequential moves.
+2-period backward-induction solver for the Igami model with **regional**
+agglomeration and **sequential** moves across regions.
 
-Solution method (Igami 2017):
-Within each period, firms move sequentially: old → both → new → pe.
-Each type observes the realized outcomes of all earlier movers, so each
-type solves a single-agent problem given beliefs over same-type and
-later-type CCPs.  With i.i.d. EVT1 private cost shocks the solution
-yields closed-form logit CCPs at each stage.
+Within each stage (old → both → new → pe), regions act in order r=1, 2, 3.
+Region r observes the realized outcome of regions 1..r-1 before choosing.
+This turns each stage's 3-variable joint fixed point over (p₁,p₂,p₃) into
+three **scalar** fixed points, solved in reverse order (r=R → 1) with CCPs
+cached by the sub-state.
 
-Solving order within a period (backward):
-  Stage 4 (PE):   solved first — no earlier-mover uncertainty remains
-  Stage 3 (new):  solved using pre-computed PE CCPs
-  Stage 2 (both): solved using pre-computed new + PE CCPs
-  Stage 1 (old):  solved last using all lower-stage CCPs
-
-Two-period structure:
-  t=1 (terminal): V1(type, s1) = π_type(s1)   [Cournot profit, no choices]
-  t=0:            solve CCPs via backward induction + sequential-move logic
+Cache layout: PE stage depends only on (s, r) and V1 so its caches are
+shared across s_orig.  The other three stages depend on flow profits at
+s_orig and are rebuilt inside `solve_state`.
 """
 
 # ---------------------------------------------------------------------------
-# Terminal period values (t = 1)
+# Small structs & helpers
 # ---------------------------------------------------------------------------
-"""
-V1[s][type]: Cournot profit earned by a firm of `type` in state `s` at t=1.
-Agglomeration is in effect: c_n depends on n_b+n_n via c_n_eff(s, p).
-"""
-function compute_terminal_values(
-        states::Vector{State},
-        p::Params) :: Dict{State, Dict{Symbol, Float64}}
+struct EV
+    old::NTuple{R,Float64}
+    both::NTuple{R,Float64}
+    new::NTuple{R,Float64}
+end
 
-    V1 = Dict{State, Dict{Symbol, Float64}}()
+const ZERO_EV = EV(ntuple(_ -> 0.0, R), ntuple(_ -> 0.0, R), ntuple(_ -> 0.0, R))
 
+set_i(t::NTuple{R,Int}, i::Int, v::Int) = ntuple(k -> k == i ? v : t[k], R)
+add_i(t::NTuple{R,Int}, i::Int, d::Int) = ntuple(k -> k == i ? t[k] + d : t[k], R)
+
+# ---------------------------------------------------------------------------
+# Terminal values (period-1 Cournot)
+# ---------------------------------------------------------------------------
+function compute_terminal_values(states::Vector{State}, p::Params) :: Dict{State, EV}
+    V1 = Dict{State, EV}()
     for s in states
-        c_n  = c_n_eff(s, p)
-        pi_o, pi_b, pi_n = cournot_profits(s.n_o, s.n_b, s.n_n, p.c_o, c_n, p)
-
-        V1[s] = Dict{Symbol, Float64}(
-            :old  => pi_o,
-            :both => pi_b,
-            :new  => pi_n,
-            :pe   => 0.0   # potential entrants don't produce
-        )
+        cn = c_n_vec(s, p)
+        pi_o, pi_b, pi_n = cournot_profits_regional(s.n_o, s.n_b, s.n_n, p.c_o, cn, p)
+        V1[s] = EV(pi_o, pi_b, pi_n)
     end
-
     return V1
 end
 
 # ---------------------------------------------------------------------------
-# Sequential within-period solver for a single state s
+# Solve context + caches
 # ---------------------------------------------------------------------------
-"""
-Solve the sequential-move game at t=0 for original state `s`, given `V1`.
+struct SolveContext
+    s_orig::State
+    flow_o::NTuple{R,Float64}
+    flow_b::NTuple{R,Float64}
+    flow_n::NTuple{R,Float64}
+end
 
-Procedure:
-  1. Compute flow profits at s (all types use π(s_orig)).
-  2. Enumerate all intermediate states reachable after old+both+new moves.
-  3. Solve stages in reverse order: PE → new → both → old.
-  4. Compute old-firm CCPs (p_so, p_io) via fixed-point.
-  5. Compute marginal CCPs for other types by integrating over the
-     equilibrium transition from s.
-
-Returns a `StateCCPs`.
-"""
-function solve_state_sequential(
-        s::State,
-        V1::Dict{State, Dict{Symbol, Float64}},
-        p::Params) :: StateCCPs
-
-    c_n   = c_n_eff(s, p)
-    pi_o, pi_b, pi_n = cournot_profits(s.n_o, s.n_b, s.n_n, p.c_o, c_n, p)
-
-    # ------------------------------------------------------------------
-    # Stage 4: PE CCPs
-    # Indexed by s_after_new = State(k_so, n_b_after_both, z_sn, n_pe)
-    # where k_so ∈ [0,n_o], n_b_after_both ∈ [0, n_b+n_o-k_so],
-    #       z_sn ∈ [0, n_n],  n_pe = s.n_pe (unchanged).
-    # ------------------------------------------------------------------
-    pe_ccps = Dict{State, Float64}()
-
-    for k_so in 0:s.n_o
-        for k_io in 0:(s.n_o - k_so)
-            for w_sb in 0:s.n_b                # ONLY deciding both can exit
-                n_b_ab = w_sb + k_io           # after both stage
-                for z_sn in 0:s.n_n
-                    sn = State(k_so, n_b_ab, z_sn, s.n_pe)
-                    haskey(pe_ccps, sn) && continue
-                    pe_ccps[sn] = solve_pe_stage(sn, V1, p)
-                end
-            end
-        end
-    end
-
-    # ------------------------------------------------------------------
-    # Stage 3: New firm CCPs
-    # Indexed by s_after_both = State(k_so, n_b_ab, n_n, n_pe)
-    # ------------------------------------------------------------------
-    new_ccps = Dict{State, Float64}()
-
-    for k_so in 0:s.n_o
-        for k_io in 0:(s.n_o - k_so)
-            for w_sb in 0:s.n_b
-                n_b_ab = w_sb + k_io
-                sab = State(k_so, n_b_ab, s.n_n, s.n_pe)
-                haskey(new_ccps, sab) && continue
-                new_ccps[sab] = solve_new_stage(sab, pi_n, pe_ccps, V1, p)
-            end
-        end
-    end
-
-    # ------------------------------------------------------------------
-    # Stage 2: Both firm CCPs
-    # Keyed by (k_so, k_io) — same n_b_deciding = s.n_b is implicit.
-    # ------------------------------------------------------------------
-    both_ccps = Dict{Tuple{Int,Int}, Float64}()
-
-    for k_so in 0:s.n_o
-        for k_io in 0:(s.n_o - k_so)
-            key = (k_so, k_io)
-            haskey(both_ccps, key) && continue
-            both_ccps[key] = solve_both_stage(
-                k_so, s.n_b, k_io, s.n_n, s.n_pe,
-                pi_b, new_ccps, pe_ccps, V1, p)
-        end
-    end
-
-    # ------------------------------------------------------------------
-    # Stage 1: Old firm CCPs
-    # ------------------------------------------------------------------
-    p_so, p_io = solve_old_stage(s, pi_o, both_ccps, new_ccps, pe_ccps, V1, p)
-    p_eo = max(0.0, 1.0 - p_so - p_io)
-
-    # ------------------------------------------------------------------
-    # Marginal CCPs for both / new / PE — average over equilibrium paths
-    # ------------------------------------------------------------------
-    marginal_p_sb = 0.0
-    marginal_p_sn = 0.0
-    marginal_p_ep = 0.0
-
-    for k_so in 0:s.n_o
-        for k_io in 0:(s.n_o - k_so)
-            k_eo = s.n_o - k_so - k_io
-            lp_old = log_multinomial_prob(s.n_o, k_so, k_io, k_eo, p_so, p_io, p_eo)
-            lp_old == -Inf && continue
-            prob_old = exp(lp_old)
-
-            p_sb = get(both_ccps, (k_so, k_io), 0.0)
-            marginal_p_sb += prob_old * p_sb
-
-            for w_sb in 0:s.n_b
-                lp_b = log_binomial_prob(s.n_b, w_sb, p_sb)
-                lp_b == -Inf && continue
-                prob_b = exp(lp_b)
-
-                n_b_ab = w_sb + k_io
-                sab    = State(k_so, n_b_ab, s.n_n, s.n_pe)
-                p_sn   = get(new_ccps, sab, 0.0)
-                marginal_p_sn += prob_old * prob_b * p_sn
-
-                for z_sn in 0:s.n_n
-                    lp_n = log_binomial_prob(s.n_n, z_sn, p_sn)
-                    lp_n == -Inf && continue
-                    prob_n = exp(lp_n)
-
-                    sn  = State(k_so, n_b_ab, z_sn, s.n_pe)
-                    p_ep = get(pe_ccps, sn, 0.0)
-                    marginal_p_ep += prob_old * prob_b * prob_n * p_ep
-                end
-            end
-        end
-    end
-
-    return StateCCPs(p_so, p_io, marginal_p_sb, marginal_p_sn, marginal_p_ep)
+mutable struct SolveCaches
+    # Global (shared across s_orig)
+    pe_ccp::Dict{Tuple{State,Int}, Float64}
+    ev_pe::Dict{Tuple{State,Int}, EV}
+    # Per-s_orig (rebuilt inside solve_state)
+    new_ccp::Dict{Tuple{State,Int}, Float64}
+    ev_new::Dict{Tuple{State,Int}, EV}
+    both_ccp::Dict{Tuple{State,Int}, Float64}
+    ev_both::Dict{Tuple{State,Int}, EV}
+    old_ccp::Dict{Tuple{State,Int}, Tuple{Float64,Float64}}
+    ev_old::Dict{Tuple{State,Int}, EV}
 end
 
 # ---------------------------------------------------------------------------
-# Main solver: full 2-period backward induction
+# PE stage (last mover, global cache)
 # ---------------------------------------------------------------------------
-"""
-Solve the 2-period model with agglomeration and sequential moves.
+function solve_pe_region(s::State, r::Int, V1::Dict{State,EV}, p::Params,
+                         C::SolveCaches; tol::Float64=1e-10, max_iter::Int=500)
+    key = (s, r)
+    haskey(C.pe_ccp, key) && return C.pe_ccp[key]
+    n = s.n_pe[r]
+    if n == 0
+        C.pe_ccp[key] = 0.0
+        return 0.0
+    end
+    p_r = 0.5
+    for _ in 1:max_iter
+        u_enter = -p.phi
+        for v in 0:(n - 1)
+            lp = log_binomial_prob(n - 1, v, p_r)
+            lp == -Inf && continue
+            prob = exp(lp)
+            # PE firms are one-shot: after region r resolves, all of its
+            # potential entrants are gone (entered or stayed out), matching
+            # the simulator's add_i(s.n_pe, r, -length(deciders)).
+            s_next = State(s.n_o, s.n_b,
+                           add_i(s.n_n, r, v + 1),
+                           set_i(s.n_pe, r, 0))
+            ev = ev_after_pe_region(s_next, r + 1, V1, p, C)
+            u_enter += p.beta * prob * ev.new[r]
+        end
+        new_p = logit2(u_enter, 0.0, p.sigma)
+        diff = abs(new_p - p_r)
+        p_r = new_p
+        diff < tol && break
+    end
+    C.pe_ccp[key] = p_r
+    return p_r
+end
 
-Returns:
-  - V1   : Dict{State, Dict{Symbol,Float64}}  terminal period values
-  - ccps : Dict{State, StateCCPs}             equilibrium CCPs at t=0
-"""
-function solve_2period(p::Params) :: Tuple{
-        Dict{State, Dict{Symbol, Float64}},
-        Dict{State, StateCCPs}}
+function ev_after_pe_region(s::State, r::Int, V1::Dict{State,EV},
+                             p::Params, C::SolveCaches)
+    if r > R
+        return get(V1, s, ZERO_EV)
+    end
+    key = (s, r)
+    haskey(C.ev_pe, key) && return C.ev_pe[key]
 
-    states = all_states(p.N_max)
-
-    # Step 1: terminal values
-    V1 = compute_terminal_values(states, p)
-
-    # Step 2: backward induction — solve sequential CCPs at t=0 for each state
-    ccps = Dict{State, StateCCPs}()
-    for s in states
-        ccps[s] = solve_state_sequential(s, V1, p)
+    n = s.n_pe[r]
+    if n == 0
+        ev = ev_after_pe_region(s, r + 1, V1, p, C)
+        C.ev_pe[key] = ev
+        return ev
     end
 
+    p_r = solve_pe_region(s, r, V1, p, C)
+
+    old = zeros(R); both = zeros(R); new_ = zeros(R)
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        # All PE firms in region r are gone after the region resolves
+        # (v entered, the rest stayed out). Mirrors the simulator.
+        s_next = State(s.n_o, s.n_b,
+                       add_i(s.n_n, r, v),
+                       set_i(s.n_pe, r, 0))
+        ev = ev_after_pe_region(s_next, r + 1, V1, p, C)
+        for k in 1:R
+            old[k]  += prob * ev.old[k]
+            both[k] += prob * ev.both[k]
+            new_[k] += prob * ev.new[k]
+        end
+    end
+    result = EV(Tuple(old), Tuple(both), Tuple(new_))
+    C.ev_pe[key] = result
+    return result
+end
+
+# ---------------------------------------------------------------------------
+# NEW stage
+# ---------------------------------------------------------------------------
+function solve_new_region(s::State, r::Int, ctx::SolveContext,
+                          V1::Dict{State,EV}, p::Params, C::SolveCaches;
+                          tol::Float64=1e-10, max_iter::Int=500)
+    key = (s, r)
+    haskey(C.new_ccp, key) && return C.new_ccp[key]
+    n = s.n_n[r]
+    if n == 0
+        C.new_ccp[key] = 0.0
+        return 0.0
+    end
+    p_r = 0.5
+    for _ in 1:max_iter
+        u_stay = ctx.flow_n[r]
+        for v in 0:(n - 1)            # peer survivors
+            lp = log_binomial_prob(n - 1, v, p_r)
+            lp == -Inf && continue
+            prob = exp(lp)
+            # Own stays ⇒ n_n[r] becomes v + 1
+            s_next = State(s.n_o, s.n_b, set_i(s.n_n, r, v + 1), s.n_pe)
+            ev = ev_after_new_region(s_next, r + 1, ctx, V1, p, C)
+            u_stay += p.beta * prob * ev.new[r]
+        end
+        new_p = logit2(u_stay, 0.0, p.sigma)
+        diff = abs(new_p - p_r)
+        p_r = new_p
+        diff < tol && break
+    end
+    C.new_ccp[key] = p_r
+    return p_r
+end
+
+function ev_after_new_region(s::State, r::Int, ctx::SolveContext,
+                              V1::Dict{State,EV}, p::Params, C::SolveCaches)
+    if r > R
+        return ev_after_pe_region(s, 1, V1, p, C)
+    end
+    key = (s, r)
+    haskey(C.ev_new, key) && return C.ev_new[key]
+
+    n = s.n_n[r]
+    if n == 0
+        ev = ev_after_new_region(s, r + 1, ctx, V1, p, C)
+        C.ev_new[key] = ev
+        return ev
+    end
+
+    p_r = solve_new_region(s, r, ctx, V1, p, C)
+
+    old = zeros(R); both = zeros(R); new_ = zeros(R)
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        s_next = State(s.n_o, s.n_b, set_i(s.n_n, r, v), s.n_pe)
+        ev = ev_after_new_region(s_next, r + 1, ctx, V1, p, C)
+        for k in 1:R
+            old[k]  += prob * ev.old[k]
+            both[k] += prob * ev.both[k]
+            new_[k] += prob * ev.new[k]
+        end
+    end
+    result = EV(Tuple(old), Tuple(both), Tuple(new_))
+    C.ev_new[key] = result
+    return result
+end
+
+# ---------------------------------------------------------------------------
+# BOTH stage — deciders are ctx.s_orig.n_b[r] (locked-in k_io already in s.n_b)
+# ---------------------------------------------------------------------------
+function solve_both_region(s::State, r::Int, ctx::SolveContext,
+                           V1::Dict{State,EV}, p::Params, C::SolveCaches;
+                           tol::Float64=1e-10, max_iter::Int=500)
+    key = (s, r)
+    haskey(C.both_ccp, key) && return C.both_ccp[key]
+    n = ctx.s_orig.n_b[r]
+    if n == 0
+        C.both_ccp[key] = 0.0
+        return 0.0
+    end
+    p_r = 0.5
+    for _ in 1:max_iter
+        u_stay = ctx.flow_b[r]
+        for v in 0:(n - 1)            # peer deciders that stay
+            lp = log_binomial_prob(n - 1, v, p_r)
+            lp == -Inf && continue
+            prob = exp(lp)
+            exiters = n - (v + 1)     # own stays, so survivors = v+1
+            s_next = State(s.n_o, add_i(s.n_b, r, -exiters), s.n_n, s.n_pe)
+            ev = ev_after_both_region(s_next, r + 1, ctx, V1, p, C)
+            u_stay += p.beta * prob * ev.both[r]
+        end
+        new_p = logit2(u_stay, 0.0, p.sigma)
+        diff = abs(new_p - p_r)
+        p_r = new_p
+        diff < tol && break
+    end
+    C.both_ccp[key] = p_r
+    return p_r
+end
+
+function ev_after_both_region(s::State, r::Int, ctx::SolveContext,
+                               V1::Dict{State,EV}, p::Params, C::SolveCaches)
+    if r > R
+        return ev_after_new_region(s, 1, ctx, V1, p, C)
+    end
+    key = (s, r)
+    haskey(C.ev_both, key) && return C.ev_both[key]
+
+    n = ctx.s_orig.n_b[r]
+    if n == 0
+        ev = ev_after_both_region(s, r + 1, ctx, V1, p, C)
+        C.ev_both[key] = ev
+        return ev
+    end
+
+    p_r = solve_both_region(s, r, ctx, V1, p, C)
+
+    old = zeros(R); both = zeros(R); new_ = zeros(R)
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        exiters = n - v
+        s_next = State(s.n_o, add_i(s.n_b, r, -exiters), s.n_n, s.n_pe)
+        ev = ev_after_both_region(s_next, r + 1, ctx, V1, p, C)
+        for k in 1:R
+            old[k]  += prob * ev.old[k]
+            both[k] += prob * ev.both[k]
+            new_[k] += prob * ev.new[k]
+        end
+    end
+    result = EV(Tuple(old), Tuple(both), Tuple(new_))
+    C.ev_both[key] = result
+    return result
+end
+
+# ---------------------------------------------------------------------------
+# OLD stage — 3-way choice (stay / innovate / exit), deciders s_orig.n_o[r]
+# ---------------------------------------------------------------------------
+function solve_old_region(s::State, r::Int, ctx::SolveContext,
+                          V1::Dict{State,EV}, p::Params, C::SolveCaches;
+                          tol::Float64=1e-10, max_iter::Int=500)
+    key = (s, r)
+    haskey(C.old_ccp, key) && return C.old_ccp[key]
+    n = ctx.s_orig.n_o[r]
+    if n == 0
+        C.old_ccp[key] = (0.0, 0.0)
+        return (0.0, 0.0)
+    end
+
+    p_s = 1/3; p_i = 1/3
+    for _ in 1:max_iter
+        u_stay  = ctx.flow_o[r]
+        u_innov = ctx.flow_o[r] - p.kappa
+        p_e = max(0.0, 1.0 - p_s - p_i)
+
+        for k_so in 0:(n - 1), k_io in 0:(n - 1 - k_so)
+            k_eo = n - 1 - k_so - k_io
+            lp = log_multinomial_prob(n - 1, k_so, k_io, k_eo, p_s, p_i, p_e)
+            lp == -Inf && continue
+            prob = exp(lp)
+
+            # Own stays: region-r n_o becomes k_so + 1, n_b gains k_io
+            s_stay = State(set_i(s.n_o, r, k_so + 1),
+                           add_i(s.n_b, r, k_io),
+                           s.n_n, s.n_pe)
+            ev_s = ev_after_old_region(s_stay, r + 1, ctx, V1, p, C)
+            u_stay += p.beta * prob * ev_s.old[r]
+
+            # Own innovates: n_o becomes k_so, n_b gains k_io + 1 (own locks in)
+            s_inn = State(set_i(s.n_o, r, k_so),
+                          add_i(s.n_b, r, k_io + 1),
+                          s.n_n, s.n_pe)
+            ev_i = ev_after_old_region(s_inn, r + 1, ctx, V1, p, C)
+            u_innov += p.beta * prob * ev_i.both[r]
+        end
+
+        vmax = max(u_stay, u_innov, 0.0)
+        e_s = exp((u_stay  - vmax) / p.sigma)
+        e_i = exp((u_innov - vmax) / p.sigma)
+        e_e = exp((0.0     - vmax) / p.sigma)
+        denom = e_s + e_i + e_e
+        np_s = e_s / denom
+        np_i = e_i / denom
+        diff = abs(np_s - p_s) + abs(np_i - p_i)
+        p_s = np_s; p_i = np_i
+        diff < tol && break
+    end
+
+    C.old_ccp[key] = (p_s, p_i)
+    return (p_s, p_i)
+end
+
+function ev_after_old_region(s::State, r::Int, ctx::SolveContext,
+                              V1::Dict{State,EV}, p::Params, C::SolveCaches)
+    if r > R
+        return ev_after_both_region(s, 1, ctx, V1, p, C)
+    end
+    key = (s, r)
+    haskey(C.ev_old, key) && return C.ev_old[key]
+
+    n = ctx.s_orig.n_o[r]
+    if n == 0
+        ev = ev_after_old_region(s, r + 1, ctx, V1, p, C)
+        C.ev_old[key] = ev
+        return ev
+    end
+
+    p_s, p_i = solve_old_region(s, r, ctx, V1, p, C)
+    p_e = max(0.0, 1.0 - p_s - p_i)
+
+    old = zeros(R); both = zeros(R); new_ = zeros(R)
+    for k_so in 0:n, k_io in 0:(n - k_so)
+        k_eo = n - k_so - k_io
+        lp = log_multinomial_prob(n, k_so, k_io, k_eo, p_s, p_i, p_e)
+        lp == -Inf && continue
+        prob = exp(lp)
+        s_next = State(set_i(s.n_o, r, k_so),
+                       add_i(s.n_b, r, k_io),
+                       s.n_n, s.n_pe)
+        ev = ev_after_old_region(s_next, r + 1, ctx, V1, p, C)
+        for k in 1:R
+            old[k]  += prob * ev.old[k]
+            both[k] += prob * ev.both[k]
+            new_[k] += prob * ev.new[k]
+        end
+    end
+    result = EV(Tuple(old), Tuple(both), Tuple(new_))
+    C.ev_old[key] = result
+    return result
+end
+
+# ---------------------------------------------------------------------------
+# Forward traversal for marginal CCPs
+# ---------------------------------------------------------------------------
+function traverse_pe!(s::State, r::Int, w::Float64, ctx::SolveContext,
+                      V1::Dict{State,EV}, p::Params, C::SolveCaches,
+                      mep::Vector{Float64})
+    r > R && return
+    n = s.n_pe[r]
+    if n == 0
+        return traverse_pe!(s, r + 1, w, ctx, V1, p, C, mep)
+    end
+    p_r = solve_pe_region(s, r, V1, p, C)
+    mep[r] += w * p_r
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        # PE firms are one-shot: zero out n_pe[r] after the region resolves.
+        s_next = State(s.n_o, s.n_b,
+                       add_i(s.n_n, r, v),
+                       set_i(s.n_pe, r, 0))
+        traverse_pe!(s_next, r + 1, w * prob, ctx, V1, p, C, mep)
+    end
+end
+
+function traverse_new!(s::State, r::Int, w::Float64, ctx::SolveContext,
+                       V1::Dict{State,EV}, p::Params, C::SolveCaches,
+                       msn::Vector{Float64}, mep::Vector{Float64})
+    if r > R
+        return traverse_pe!(s, 1, w, ctx, V1, p, C, mep)
+    end
+    n = s.n_n[r]
+    if n == 0
+        return traverse_new!(s, r + 1, w, ctx, V1, p, C, msn, mep)
+    end
+    p_r = solve_new_region(s, r, ctx, V1, p, C)
+    msn[r] += w * p_r
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        s_next = State(s.n_o, s.n_b, set_i(s.n_n, r, v), s.n_pe)
+        traverse_new!(s_next, r + 1, w * prob, ctx, V1, p, C, msn, mep)
+    end
+end
+
+function traverse_both!(s::State, r::Int, w::Float64, ctx::SolveContext,
+                         V1::Dict{State,EV}, p::Params, C::SolveCaches,
+                         msb::Vector{Float64}, msn::Vector{Float64},
+                         mep::Vector{Float64})
+    if r > R
+        return traverse_new!(s, 1, w, ctx, V1, p, C, msn, mep)
+    end
+    n = ctx.s_orig.n_b[r]
+    if n == 0
+        return traverse_both!(s, r + 1, w, ctx, V1, p, C, msb, msn, mep)
+    end
+    p_r = solve_both_region(s, r, ctx, V1, p, C)
+    msb[r] += w * p_r
+    for v in 0:n
+        lp = log_binomial_prob(n, v, p_r)
+        lp == -Inf && continue
+        prob = exp(lp)
+        exiters = n - v
+        s_next = State(s.n_o, add_i(s.n_b, r, -exiters), s.n_n, s.n_pe)
+        traverse_both!(s_next, r + 1, w * prob, ctx, V1, p, C, msb, msn, mep)
+    end
+end
+
+function traverse_old!(s::State, r::Int, w::Float64, ctx::SolveContext,
+                        V1::Dict{State,EV}, p::Params, C::SolveCaches,
+                        mso::Vector{Float64}, mio::Vector{Float64},
+                        msb::Vector{Float64}, msn::Vector{Float64},
+                        mep::Vector{Float64})
+    if r > R
+        return traverse_both!(s, 1, w, ctx, V1, p, C, msb, msn, mep)
+    end
+    n = ctx.s_orig.n_o[r]
+    if n == 0
+        return traverse_old!(s, r + 1, w, ctx, V1, p, C, mso, mio, msb, msn, mep)
+    end
+    p_s, p_i = solve_old_region(s, r, ctx, V1, p, C)
+    p_e = max(0.0, 1.0 - p_s - p_i)
+    mso[r] += w * p_s
+    mio[r] += w * p_i
+    for k_so in 0:n, k_io in 0:(n - k_so)
+        k_eo = n - k_so - k_io
+        lp = log_multinomial_prob(n, k_so, k_io, k_eo, p_s, p_i, p_e)
+        lp == -Inf && continue
+        prob = exp(lp)
+        s_next = State(set_i(s.n_o, r, k_so),
+                       add_i(s.n_b, r, k_io),
+                       s.n_n, s.n_pe)
+        traverse_old!(s_next, r + 1, w * prob, ctx, V1, p, C,
+                      mso, mio, msb, msn, mep)
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Top-level: solve a single initial state
+# ---------------------------------------------------------------------------
+function solve_state(s_orig::State, V1::Dict{State,EV},
+                     pe_ccp_cache::Dict{Tuple{State,Int}, Float64},
+                     ev_after_pe_cache::Dict{Tuple{State,Int}, EV},
+                     p::Params) :: StateCCPs
+
+    cn = c_n_vec(s_orig, p)
+    pi_o, pi_b, pi_n = cournot_profits_regional(
+        s_orig.n_o, s_orig.n_b, s_orig.n_n, p.c_o, cn, p)
+
+    ctx = SolveContext(s_orig, pi_o, pi_b, pi_n)
+    C = SolveCaches(
+        pe_ccp_cache, ev_after_pe_cache,
+        Dict{Tuple{State,Int}, Float64}(),
+        Dict{Tuple{State,Int}, EV}(),
+        Dict{Tuple{State,Int}, Float64}(),
+        Dict{Tuple{State,Int}, EV}(),
+        Dict{Tuple{State,Int}, Tuple{Float64,Float64}}(),
+        Dict{Tuple{State,Int}, EV}(),
+    )
+
+    mso = zeros(R); mio = zeros(R)
+    msb = zeros(R); msn = zeros(R); mep = zeros(R)
+
+    traverse_old!(s_orig, 1, 1.0, ctx, V1, p, C, mso, mio, msb, msn, mep)
+
+    return StateCCPs(
+        (mso[1], mso[2], mso[3]),
+        (mio[1], mio[2], mio[3]),
+        (msb[1], msb[2], msb[3]),
+        (msn[1], msn[2], msn[3]),
+        (mep[1], mep[2], mep[3]))
+end
+
+# ---------------------------------------------------------------------------
+# Convenience top-level solvers
+# ---------------------------------------------------------------------------
+function solve_2period(p::Params)
+    states = all_states(p.N_max)
+    V1 = compute_terminal_values(states, p)
+    pe_ccp_cache      = Dict{Tuple{State,Int}, Float64}()
+    ev_after_pe_cache = Dict{Tuple{State,Int}, EV}()
+    ccps = Dict{State, StateCCPs}()
+    for s in states
+        ccps[s] = solve_state(s, V1, pe_ccp_cache, ev_after_pe_cache, p)
+    end
     return V1, ccps
+end
+
+function solve_initial(s0::State, p::Params)
+    states = all_states(p.N_max)
+    V1 = compute_terminal_values(states, p)
+    pe_ccp_cache      = Dict{Tuple{State,Int}, Float64}()
+    ev_after_pe_cache = Dict{Tuple{State,Int}, EV}()
+    ccps0 = solve_state(s0, V1, pe_ccp_cache, ev_after_pe_cache, p)
+    return V1, ccps0
 end
