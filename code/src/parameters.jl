@@ -3,8 +3,9 @@ Model parameters for the 2-period Igami (2017) extension with *regional*
 agglomeration.
 
 Calibration is illustrative (not estimated from data).  The model has a fixed
-number of regions `R = 3`.  Agglomeration spillovers are region-specific:
-region `r`'s new-tech cost falls in the number of innovators located in `r`.
+number of regions `R = 3`.  Agglomeration spillovers are bloc-specific:
+region `r`'s new-tech cost falls in the number of innovators located in `r`'s
+*spillover bloc* (singleton blocs, the default, recover purely local spillovers).
 
 `blocs` partitions the regions into *spillover pools*: regions sharing a
 bloc id pool their innovator count when the new-tech cost is computed
