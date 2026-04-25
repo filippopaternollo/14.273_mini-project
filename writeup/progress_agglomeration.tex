@@ -11,6 +11,7 @@
 \input{../output/estimates/2period_estimates.txt}
 \input{../output/estimates/regional_estimates.txt}
 \input{../output/estimates/estimation.txt}
+\input{../output/estimates/merger_estimates.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -161,8 +162,8 @@ Table~\ref{tab:params}.
     $\beta$   & Discount factor               & 0.9  \\
     $\kappa$  & Innovation cost               & 0.3  \\
     $\phi$    & Entry cost                    & 0.2  \\
-    $\sigma$  & EVT1 scale                    & 1.0  \\
-    $\gamma$  & Agglomeration (comparative statics) & varied \\
+    $\sigma$  & EVT1 scale                    & 0.5  \\
+    $\gamma$  & Agglomeration (default)       & 0.15 \\
     $\rho$    & Cross-market substitution     & 0.5  \\
     \bottomrule
   \end{tabular}
@@ -321,12 +322,12 @@ Because the state space now has $4R = 12$ integer coordinates, we cap
 $N_{\max} = 6$ on this branch (about $1.8\times 10^4$ enumerated states) and
 pick initial states with total firm count $\le 6$. One visible artefact of
 the sequential-move convention is a small first-mover asymmetry in the
-baseline: with uniform $\gamma_r = 0.05$ the reported innovation CCPs are
-$(0.3333, 0.3330, 0.3326)$ rather than the exactly-symmetric values one
-would get under simultaneous moves within a stage. Region~1 commits without
-observing anyone, while region~3 best-responds to the realised history; the
-gap is $\le 10^{-3}$ in all experiments and does not affect any of the
-counterfactual comparisons.
+baseline: with uniform $\gamma_r = \gammaOther$ the reported innovation
+CCPs are $(\pInnovBaselineROne,\, \pInnovBaselineRTwo,\,
+\pInnovBaselineRThree)$ rather than exactly identical across regions.
+Region~1 commits without observing anyone, while region~3 best-responds to
+the realised history; the gap is well below the magnitude of every
+counterfactual we compare and does not affect any qualitative conclusion.
 
 \subsection{Baseline and comparative statics}
 
@@ -425,6 +426,7 @@ world, with magnitudes that depend on the level of cannibalization $\rho$
 and the strength of the local externality $\gamma_r$.
 
 \section{Estimation on Simulated Data}
+\label{sec:estimation}
 
 As a first pass at recovering the model's structural parameters from
 data, we simulate a firm-level dataset from the regional model under
@@ -538,19 +540,189 @@ The period-1 action log-likelihood at the optimum is $\LogLikHat$.
     Standard errors (BHHH) are reported only for the MLE step.}
 \end{table}
 
-\section{Next Steps: Counterfactuals}
+\section{Counterfactual: EU--US Alliance}
+\label{sec:merger}
+
+The estimation step delivers structural parameters from a single
+sample. We use them to ask a policy question: what happens when two
+regions \textbf{integrate their knowledge pools}? An alliance between
+regions~1 and~2 is interpreted as an EU--US technology compact in
+which firms in either region benefit from the innovator count of
+both regions combined, while region~3 stays alone. Cournot competition
+is unchanged --- still global --- so the only thing the alliance
+modifies is the cost of new technology in the allied regions.
+
+\subsection{Spillover specification under the alliance}
+
+Under the baseline, region~$r$'s new-technology marginal cost depends
+only on its own innovators, equation~\eqref{eq:local_agglom}. Under
+the alliance of $\{1, 2\}$, regions~1 and~2 share an enlarged pool:
+\begin{equation}
+  c_{n,r,t}^{\mathrm{alliance}}
+    = c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
+      \bigl(n_{b,r',t} + n_{n,r',t}\bigr),
+  \qquad
+  \mathrm{bloc}(1) = \mathrm{bloc}(2) = \{1, 2\},\
+  \mathrm{bloc}(3) = \{3\}.
+  \label{eq:bloc_pool}
+\end{equation}
+The implementation adds a single \texttt{blocs} field to the
+parameter struct; the default \texttt{(1,2,3)} recovers
+equation~\eqref{eq:local_agglom} bit-for-bit.
+
+\subsection{Welfare}
+
+The two-market linear demand of
+equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} is rationalised by
+the quasi-linear utility $U = A(Q_o + Q_n) - \tfrac{b}{2}(Q_o^2 +
+Q_n^2) - s\, Q_o\, Q_n$ with $b = B/M$ and $s = \rho B/M$, giving
+consumer surplus
+\begin{equation}
+  \mathrm{CS}(s) = \tfrac{b}{2}(Q_o^2 + Q_n^2) + s\, Q_o\, Q_n.
+  \label{eq:cs}
+\end{equation}
+Because Cournot is global, $\mathrm{CS}$ is a single number; we
+allocate it equally across regions (equal-population assumption).
+Producer surplus is local: each firm's per-period profit is charged
+to its own region. Innovation and entry costs are paid by the firm's
+region in period~1. Two-period discounted welfare per region is
+\begin{equation}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\,\mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\,\mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+  \label{eq:welfare}
+\end{equation}
+which satisfies $\sum_r W_r = \mathrm{CS}_{\mathrm{total}} +
+\sum_r \mathrm{PS}_r - \sum_r (\kappa\, k^{\mathrm{innov}}_r +
+\phi\, k^{\mathrm{enter}}_r)$ by construction. The runner verifies
+this identity numerically and finds residuals at machine precision.
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \MergerNMarkets$ independent simulations per
+scenario. Each market draws its own initial state $s_0$ from the same
+distribution \texttt{simulate\_data.jl} uses, so the counterfactual
+sits on the same population the model was estimated on. The same
+seed (\MergerSeed) drives both scenarios, and per-market we use
+\texttt{MersenneTwister(seed + $k$)}. Identical $s_0$ draws and
+identical EVT1 shock paths under both scenarios mean each market
+contributes a paired observation $(W_r^{\mathrm{base}},
+W_r^{\mathrm{alli}})$, so the variance of the welfare difference is
+much smaller than the variance of either level. Headline numbers
+stabilise to about $0.2$ percentage points by $K = 1000$.
+
+\subsection{Calibration and results}
+
+We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$,
+$c_{n,0}$, and $N_{\max}$ at the values of
+Table~\ref{tab:params}, and use the structural estimates from
+Section~\ref{sec:estimation}: $\widehat{\kappa} =
+\MergerKappaHat$, $\widehat{\phi} = \MergerPhiHat$, and uniform
+$\widehat{\gamma}_r = \MergerGammaHat$.
+
+Table~\ref{tab:merger} reports the full per-region decomposition.
+Innovation rises by $\MergerInnovPctROne\,\%$ in region~1 and
+$\MergerInnovPctRTwo\,\%$ in region~2, and falls by
+$|\MergerInnovPctRThree|\,\%$ in region~3. Entry rates move in the
+same direction with smaller magnitudes.\\
+
+\begin{table}[h]
+  \centering
+  \caption{EU--US alliance: per-region equilibrium and welfare}
+  \medskip
+  \label{tab:merger}
+  \input{../output/tables/merger_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over $K = \MergerNMarkets$
+    independent markets, each drawing its own $s_0$ from the DGP used
+    by \texttt{simulate\_data.jl}; common random numbers across
+    scenarios (seed = \MergerSeed). Calibration: $\widehat{\kappa} =
+    \MergerKappaHat$, $\widehat{\phi} = \MergerPhiHat$, uniform
+    $\widehat{\gamma}_r = \MergerGammaHat$. Baseline blocs
+    $(1,2,3)$; alliance blocs $(1,1,2)$. CS allocated equally across
+    the three regions; PS$_r$ aggregates own-region firms' profits
+    in both periods; costs paid charges $\kappa\, k^{\mathrm{innov}}_r
+    + \phi\, k^{\mathrm{enter}}_r$ to region~$r$.}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_innovation.pdf}
+  \caption{Innovation rate $P(\text{innov}\mid\text{old}, r)$ by region,
+           baseline vs.\ alliance.}
+  \label{fig:merger_innovation}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_welfare.pdf}
+  \caption{Per-region discounted welfare $W_r$ baseline vs.\ alliance.
+           Both allied regions gain visibly; region~3's bars are
+           indistinguishable.}
+  \label{fig:merger_welfare}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{Allied regions gain in two ways.} Their pooled innovator
+count lowers $c_{n,1}$ and $c_{n,2}$ whenever \emph{either} region
+has an innovator, raising the period-2 profit of being on new tech.
+This pulls more firms into innovation and entry there, which raises
+producer surplus, and the additional new-tech output also lowers
+prices globally, raising the regions' share of consumer surplus.
+Welfare rises by $\MergerWelfPctROne\,\%$ in region~1 and
+$\MergerWelfPctRTwo\,\%$ in region~2.\\
+
+\textbf{Region~3 loses on innovation but breaks even on welfare.}
+Tougher global Cournot competition from cheaper allied competitors
+drags region~3's $P(\mathrm{innov})$ and $P(\mathrm{enter})$ down by
+about $4\,\%$ and $3\,\%$ respectively, and its $\mathrm{PS}_3$ falls
+by roughly $7\,\%$. Its share of the global CS gain is almost the
+same magnitude in the opposite direction, so its net welfare moves by
+less than a basis point ($\MergerWelfPctRThree\,\%$). The unallied
+region is harmed in real-economy terms (less innovation, lower
+profits) but the consumer-side benefit of cheaper goods produced by
+the alliance compensates almost exactly.\\
+
+\textbf{The aggregate gain is positive and sizeable.} Total welfare
+rises by $\MergerWelfPctTotal\,\%$ of baseline. Roughly half of the
+gain accrues to each allied region, with a near-zero residual from
+region~3. Knowledge integration is a positive-sum game even before
+factoring in the aggregate consumer benefits.
+
+The result depends on the calibration. Under an earlier
+$(\gamma, \sigma) = (0.05, 1.0)$ setting the same alliance moved
+welfare by under $1\,\%$ everywhere; tripling $\gamma$ scales the
+spillover delivered by the merger, and halving $\sigma$ doubles the
+logit slope $P(1-P)/\sigma$ against any payoff change, so the
+combined effect on equilibrium quantities is roughly $6\times$. The
+recalibrated values stay well below the cost-floor saturation that
+sets in at $\gamma \gtrsim 0.30$, so the model is in its responsive
+interior. Full details, including the K-stability diagnostic and the
+$\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
+\texttt{notes/merger\_counterfactual.md}.
+
+\section{Next Steps}
 
 \begin{enumerate}
-  \item \textbf{Bilateral spillover pools.} Allow neighbouring regions to
-        share an enlarged effective innovator pool (e.g.\ regions~1 and~2
-        pool their $N^{\mathrm{inn}}$), and trace how cross-regional
-        knowledge flows reshape the leakage pattern documented in
-        Table~\ref{tab:regional_comparative_statics}.
-  \item \textbf{Welfare and industrial policy.} Compute consumer surplus,
-        producer surplus, and fiscal cost under the region-1 subsidy of
-        Comparative Static~A, and report the net welfare change to assess
-        whether targeted R\&D subsidies are justified once the global
-        Cournot spillover is priced in.
+  \item \textbf{Heterogeneous absorptive capacity.} The alliance
+        result here uses uniform $\widehat{\gamma}_r$. Allowing
+        $\gamma_r$ to differ across regions, with the bloc-pooled
+        spec of equation~\eqref{eq:bloc_pool}, would let one region's
+        higher absorptive capacity amplify the alliance's effect.
+  \item \textbf{Fiscal cost of policy.} The current welfare
+        accounting prices in firms' costs paid but does not net out
+        the fiscal cost of any subsidy (e.g.\ Comparative Static~A's
+        $\gamma_1$ tilt). Adding government revenue/cost makes the
+        targeted-subsidy and alliance scenarios directly comparable
+        as policy levers.
+  \item \textbf{$T > 2$ horizon.} A genuine multi-period extension
+        would force the value-function recursion to use the
+        $\sigma \log \sum \exp$ ex-ante form at every internal period.
+        The current 2-period setup avoids this because period~2 is
+        terminal.
 \end{enumerate}
 
 \end{document}
