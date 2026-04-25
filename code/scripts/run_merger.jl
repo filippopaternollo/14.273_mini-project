@@ -64,26 +64,26 @@ println("Alliance (blocs = (1, 1, 2))...")
 @time w_alli = expected_welfare_mc(p_alli; n_markets = N_MARKETS, seed = SEED)
 
 # Verification: Σ_r W_r equals CS_total + Σ PS_r − Σ costs_r
-function check_sum_identity(w, label)
-    cs_disc = w.cs_p1 + 0.9 * w.cs_p2  # β = 0.9, hardcoded for the check
+function check_sum_identity(w, label, beta)
+    cs_disc = w.cs_p1 + beta * w.cs_p2
     rhs = cs_disc + sum(w.ps_by_region) - sum(w.costs_by_region)
     err = w.total_welfare - rhs
     @printf("  Σ_r W_r identity (%s): Σ = %.6f   direct = %.6f   diff = %+.2e\n",
             label, w.total_welfare, rhs, err)
 end
 println("\n=== Sanity: Σ_r W_r = CS_total + Σ PS_r − Σ costs_r ===")
-check_sum_identity(w_base, "baseline")
-check_sum_identity(w_alli, "alliance")
+check_sum_identity(w_base, "baseline", p_base.beta)
+check_sum_identity(w_alli, "alliance", p_alli.beta)
 
 # ── Display headline numbers ────────────────────────────────────────────────
-function print_scenario(label, w)
+function print_scenario(label, w, beta)
     println("\n--- $label ---")
     @printf("  Innov rate (per region): (%.4f, %.4f, %.4f)\n",
             w.innov_rate_by_region...)
     @printf("  Enter rate (per region): (%.4f, %.4f, %.4f)\n",
             w.enter_rate_by_region...)
     @printf("  CS / R per region      : %.4f\n",
-            (w.cs_p1 + 0.9 * w.cs_p2) / R)
+            (w.cs_p1 + beta * w.cs_p2) / R)
     @printf("  PS_r per region        : (%.4f, %.4f, %.4f)\n",
             w.ps_by_region...)
     @printf("  Costs_r per region     : (%.4f, %.4f, %.4f)\n",
@@ -93,8 +93,8 @@ function print_scenario(label, w)
     @printf("  Σ_r W_r                : %.4f\n", w.total_welfare)
 end
 
-print_scenario("Baseline", w_base)
-print_scenario("Alliance {1, 2}", w_alli)
+print_scenario("Baseline", w_base, p_base.beta)
+print_scenario("Alliance {1, 2}", w_alli, p_alli.beta)
 
 println("\n=== Δ (alliance − baseline) ===")
 Δ_innov   = ntuple(r -> w_alli.innov_rate_by_region[r] - w_base.innov_rate_by_region[r], R)
@@ -103,7 +103,7 @@ println("\n=== Δ (alliance − baseline) ===")
 Δ_costs   = ntuple(r -> w_alli.costs_by_region[r]   - w_base.costs_by_region[r], R)
 Δ_welfare = ntuple(r -> w_alli.welfare_by_region[r] - w_base.welfare_by_region[r], R)
 Δ_total   = w_alli.total_welfare - w_base.total_welfare
-Δ_cs_per  = ((w_alli.cs_p1 + 0.9 * w_alli.cs_p2) - (w_base.cs_p1 + 0.9 * w_base.cs_p2)) / R
+Δ_cs_per  = ((w_alli.cs_p1 + p_alli.beta * w_alli.cs_p2) - (w_base.cs_p1 + p_base.beta * w_base.cs_p2)) / R
 
 # Percent changes relative to baseline (guard against /0 for innov/enter rates)
 safepct(num, denom) = denom > 0 ? 100.0 * num / denom : 0.0
