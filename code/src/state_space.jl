@@ -61,11 +61,20 @@ end
 """
     c_n_eff(s, r, p)
 
-Regional effective new-technology marginal cost.  Spillovers are local:
-`c_{n,r} = c_n0 - γ_r · (n_b^r + n_n^r)`, clamped at 0.
+Regional effective new-technology marginal cost,
+`c_{n,r} = c_n0 - γ_r · Σ_{r' ∈ bloc(r)} (n_b^{r'} + n_n^{r'})`, clamped at 0.
+
+`bloc(r) = {r' : p.blocs[r'] == p.blocs[r]}`: regions sharing a bloc id
+pool their innovator counts.  `p.blocs == (1, 2, 3)` (the default) recovers
+purely local spillovers.
 """
-c_n_eff(s::State, r::Int, p::Params) =
-    max(0.0, p.c_n0 - p.gamma[r] * (s.n_b[r] + s.n_n[r]))
+function c_n_eff(s::State, r::Int, p::Params)
+    pool = 0
+    for r2 in 1:R
+        p.blocs[r2] == p.blocs[r] && (pool += s.n_b[r2] + s.n_n[r2])
+    end
+    return max(0.0, p.c_n0 - p.gamma[r] * pool)
+end
 
 c_n_vec(s::State, p::Params) = ntuple(r -> c_n_eff(s, r, p), R)
 

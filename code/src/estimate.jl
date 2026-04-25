@@ -122,7 +122,7 @@ end
 function _with_params(p::Params; kappa = p.kappa, phi = p.phi,
                       gamma::NTuple{R,Float64} = p.gamma)
     return Params(p.A, p.B, p.M, p.c_o, p.c_n0, p.beta,
-                  kappa, phi, p.sigma, gamma, p.rho, p.N_max)
+                  kappa, phi, p.sigma, gamma, p.rho, p.N_max, p.blocs)
 end
 
 # ---------------------------------------------------------------------------

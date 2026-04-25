@@ -5,6 +5,13 @@ agglomeration.
 Calibration is illustrative (not estimated from data).  The model has a fixed
 number of regions `R = 3`.  Agglomeration spillovers are region-specific:
 region `r`'s new-tech cost falls in the number of innovators located in `r`.
+
+`blocs` partitions the regions into *spillover pools*: regions sharing a
+bloc id pool their innovator count when the new-tech cost is computed
+(see `c_n_eff`).  The default `(1, 2, 3)` puts each region in its own bloc
+and recovers the original local-spillover model bit-for-bit.  Counterfactuals
+that "merge" two regions set their bloc ids equal — e.g. `(1, 1, 2)`
+represents an alliance between regions 1 and 2.
 """
 const R = 3
 
@@ -21,19 +28,27 @@ struct Params
     gamma::NTuple{R,Float64}        # per-region agglomeration parameters (γ_r ≥ 0)
     rho::Float64                    # cross-market substitution: S = rho*B; rho ∈ [0,1)
     N_max::Int                      # max total firms incl. potential entrants (bounds state space)
+    blocs::NTuple{R,Int}            # spillover-pool ids; default (1,2,3) → singletons
 end
 
 """
-    default_params(; gamma = 0.05, rho = 0.5, N_max = 6)
+    default_params(; gamma = 0.05, rho = 0.5, N_max = 6, blocs = (1, 2, 3),
+                     kappa = 0.3, phi = 0.2)
 
 Default plausible calibration.  `gamma` may be a scalar (applied to every
 region) or an `NTuple{3,Float64}` for region-specific values.  `N_max` defaults
 to 6 on this branch because the regional state space has 4·R = 12 bins and
-blows up quickly.
+blows up quickly.  `blocs` defaults to singleton pools; pass e.g. `(1, 1, 2)`
+to merge regions 1 and 2 into a single spillover pool.  `kappa` and `phi`
+are exposed so counterfactual scripts can plug in estimated values without
+constructing a `Params` from scratch.
 """
 function default_params(; gamma = 0.05,
                           rho::Float64 = 0.5,
-                          N_max::Int = 6)
+                          N_max::Int = 6,
+                          blocs::NTuple{R,Int} = (1, 2, 3),
+                          kappa::Float64 = 0.3,
+                          phi::Float64 = 0.2)
     γ = gamma isa Number ? ntuple(_ -> Float64(gamma), R) :
                            NTuple{R,Float64}(gamma)
     return Params(
@@ -43,11 +58,12 @@ function default_params(; gamma = 0.05,
         1.5,    # c_o
         0.5,    # c_n0
         0.9,    # beta
-        0.3,    # kappa
-        0.2,    # phi
+        kappa,
+        phi,
         1.0,    # sigma
         γ,      # gamma per region
         rho,
-        N_max
+        N_max,
+        blocs
     )
 end
