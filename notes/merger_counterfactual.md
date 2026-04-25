@@ -178,6 +178,20 @@ Cross-market substitution `ρ` is treated as known. A future estimation
 step that lets `ρ` differ from `0.5` would change `CS` levels and could
 alter the size of region 3's gain, though not its sign for plausible `ρ`.
 
+EVT1 shocks are treated as a smoothing device, not as real cost
+heterogeneity. The realised-shock contribution to firm welfare,
+`σ · γ_em` per decision (γ_em ≈ 0.5772 the Euler–Mascheroni constant),
+is omitted from `PS_r`. The number of choosing firms is identical
+between baseline and alliance because both scenarios use the same
+drawn `s_0` per market under common random numbers, so this constant
+cancels in every Δ we report. Absolute welfare *levels* would shift
+by `σ · γ_em × N_decisions` per market under the real-shock
+interpretation, but our headline differences are unaffected. The
+σ·log Σ exp closed-form ex-ante value never appears in the recursion
+either: period 2 is terminal, so no ex-ante value is ever fed into a
+later choice. A `T > 2` extension would need to add the σ·log Σ exp
+term at every internal period.
+
 ## Regenerating
 
 ```bash
