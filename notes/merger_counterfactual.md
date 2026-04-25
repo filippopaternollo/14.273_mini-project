@@ -110,11 +110,19 @@ The remaining parameters are treated as known and held at
 
 Innovation rates (period-1 old → both, pooled across markets in the sample):
 
-| Region | Baseline | Alliance | Δ        |
-|--------|----------|----------|----------|
-| 1      | 0.3480   | 0.3502   | +0.0023  |
-| 2      | 0.3465   | 0.3504   | +0.0039  |
-| 3      | 0.3485   | 0.3449   | −0.0035  |
+| Region | Baseline | Alliance | Δ        | Δ / baseline |
+|--------|----------|----------|----------|--------------|
+| 1      | 0.3480   | 0.3502   | +0.0023  | +0.65 %      |
+| 2      | 0.3465   | 0.3504   | +0.0039  | +1.12 %      |
+| 3      | 0.3485   | 0.3449   | −0.0035  | −1.01 %      |
+
+Entry rates (period-1 pe → new) move in the same direction:
+
+| Region | Baseline | Alliance | Δ        | Δ / baseline |
+|--------|----------|----------|----------|--------------|
+| 1      | 0.5265   | 0.5288   | +0.0022  | +0.43 %      |
+| 2      | 0.5524   | 0.5533   | +0.0009  | +0.16 %      |
+| 3      | 0.5503   | 0.5477   | −0.0026  | −0.47 %      |
 
 Innovation rises in both allied regions and falls slightly in region 3.
 The mechanism is straightforward: the pooled spillover lowers `c_{n,1}` and

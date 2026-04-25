@@ -16,6 +16,14 @@
 \newcommand{\MergerInnovDeltaROne}{+0.0023}
 \newcommand{\MergerInnovDeltaRTwo}{+0.0039}
 \newcommand{\MergerInnovDeltaRThree}{-0.0035}
+% Per-region innovation rate, percent change relative to baseline
+\newcommand{\MergerInnovPctROne}{+0.65}
+\newcommand{\MergerInnovPctRTwo}{+1.12}
+\newcommand{\MergerInnovPctRThree}{-1.01}
+% Per-region entry rate, percent change relative to baseline
+\newcommand{\MergerEnterPctROne}{+0.43}
+\newcommand{\MergerEnterPctRTwo}{+0.16}
+\newcommand{\MergerEnterPctRThree}{-0.47}
 % Per-region welfare
 \newcommand{\MergerWelfBaselineROne}{1.8431}
 \newcommand{\MergerWelfBaselineRTwo}{1.8435}
