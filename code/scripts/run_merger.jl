@@ -156,25 +156,65 @@ for k_test in (500, 1000, 5000)
             k_test, Δw..., pw..., ps)
 end
 
-# ── Plot helpers: side-by-side grouped bars at offset x-coords ──────────────
-# Plots.bar with a matrix overlays the series rather than dodging them, so we
-# place the two series at hand-tuned x-offsets and use bar_width to keep them
-# from touching.
+# ── Plot helpers: clean side-by-side grouped bars ──────────────────────────
+# Plots.bar with a matrix overlays the series, so we offset the two series by
+# hand. Aesthetic borrows from Kieran Healy: muted Wong-palette colors, no
+# top/right frame, light horizontal grid only, legend below the panel,
+# value labels on top of each bar.
 const REGION_LABELS = ["Region 1", "Region 2", "Region 3"]
-const X_BASE = [0.8, 1.8, 2.8]
-const X_ALLI = [1.2, 2.2, 3.2]
-const BW     = 0.36
+const X_BASE = [0.85, 1.85, 2.85]
+const X_ALLI = [1.15, 2.15, 3.15]
+const BW     = 0.30
+const COL_BASE = colorant"#0072B2"   # Wong blue
+const COL_ALLI = colorant"#D55E00"   # Wong vermilion
 
 function grouped_bar(values_base, values_alli; ylabel, title, fig_path)
+    ymax = max(maximum(values_base), maximum(values_alli))
+    pad  = 0.14 * ymax
+
     plt = bar(X_BASE, values_base;
-              bar_width = BW, label = "Baseline",
-              color = :steelblue, linecolor = :steelblue,
-              xlabel = "Region", ylabel = ylabel, title = title,
-              xticks = (1:3, REGION_LABELS), xlims = (0.4, 3.6),
-              legend = :topright, grid = :y, size = (720, 430))
+              bar_width      = BW,
+              label          = "Baseline",
+              color          = COL_BASE,
+              linecolor      = COL_BASE,
+              xticks         = (1:3, REGION_LABELS),
+              xlims          = (0.4, 3.6),
+              ylims          = (0, ymax + pad),
+              ylabel         = ylabel,
+              title          = title,
+              legend         = :outerbottom,
+              legend_columns = 2,
+              foreground_color_legend = nothing,
+              background_color_legend = nothing,
+              framestyle     = :semi,
+              grid           = :y,
+              gridalpha      = 0.25,
+              gridlinewidth  = 0.5,
+              tick_direction = :out,
+              titlefontsize  = 12,
+              guidefontsize  = 10,
+              tickfontsize   = 9,
+              legendfontsize = 10,
+              size           = (720, 460),
+              left_margin    = 5Plots.mm,
+              bottom_margin  = 5Plots.mm,
+              top_margin     = 3Plots.mm)
     bar!(plt, X_ALLI, values_alli;
-         bar_width = BW, label = "Alliance \\{1, 2\\}",
-         color = :tomato, linecolor = :tomato)
+         bar_width = BW,
+         label     = "Alliance {1, 2}",
+         color     = COL_ALLI,
+         linecolor = COL_ALLI)
+
+    label_offset = 0.025 * ymax
+    for r in 1:3
+        annotate!(plt, X_BASE[r], values_base[r] + label_offset,
+                  Plots.text(@sprintf("%.3f", values_base[r]),
+                             8, COL_BASE, :center, :bottom))
+        annotate!(plt, X_ALLI[r], values_alli[r] + label_offset,
+                  Plots.text(@sprintf("%.3f", values_alli[r]),
+                             8, COL_ALLI, :center, :bottom))
+    end
+
     savefig(plt, fig_path)
     return fig_path
 end
