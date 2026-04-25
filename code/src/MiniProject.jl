@@ -10,10 +10,10 @@ include("welfare.jl")
 
 export R
 export Params, default_params
-export State, StateCCPs, EV, all_states, total_firms
+export State, StateCCPs, EV, all_states
 export c_n_eff, c_n_vec
-export cournot_profits, cournot_profits_regional, cournot_quantities_regional
-export compute_terminal_values, solve_2period, solve_initial, solve_state
+export cournot_profits_regional, cournot_quantities_regional
+export compute_terminal_values, solve_initial, solve_state
 export simulate_market, random_s0
 export MarketData, recover_markets, nls_gamma, loglik_actions,
        loglik_market, mle_kappa_phi, bhhh_se

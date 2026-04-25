@@ -57,7 +57,7 @@ Each market draws its own s₀ independently via `random_s0(rng, p)`
 is empty or if the **total** firm count (active *plus* potential entrants)
 exceeds `N_max = 6`, and otherwise accept. The bound matches
 `all_states(p.N_max)`, which enumerates states with
-`total_firms(s) ≤ N_max`, so every drawn `s0` is guaranteed to live in
+total firm count `≤ N_max`, so every drawn `s0` is guaranteed to live in
 the enumerated state space.
 
 ## Sampling scheme

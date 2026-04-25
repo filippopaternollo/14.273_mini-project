@@ -26,8 +26,6 @@ Base.hash(s::State, h::UInt) = hash((s.n_o, s.n_b, s.n_n, s.n_pe), h)
 Base.:(==)(a::State, b::State) =
     a.n_o == b.n_o && a.n_b == b.n_b && a.n_n == b.n_n && a.n_pe == b.n_pe
 
-total_firms(s::State) = sum(s.n_o) + sum(s.n_b) + sum(s.n_n) + sum(s.n_pe)
-
 """
     all_states(N_max)
 

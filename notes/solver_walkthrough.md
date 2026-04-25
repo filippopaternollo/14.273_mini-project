@@ -2,7 +2,7 @@
 
 This note walks through the backward-induction solver for the 2-period
 regional Igami model. The solver lives in `code/src/solver.jl` and is
-called from `solve_initial(s0, p)` / `solve_2period(p)`.
+called from `solve_initial(s0, p)`.
 
 ## 1. What the solver computes
 
@@ -88,7 +88,7 @@ order:
 6.  solve_both_region   ↔  ev_after_both_region [stage 2]
 7.  solve_old_region    ↔  ev_after_old_region  [stage 1]
 8.  traverse_old! → traverse_both! → traverse_new! → traverse_pe!
-9.  solve_state, solve_2period, solve_initial
+9.  solve_state, solve_initial
 ```
 
 Each stage has two partner functions:
@@ -376,19 +376,13 @@ cost roughly the number of reachable sub-states times a small constant,
 which works out to ~20ms per `solve_state` call in our baseline
 calibration.
 
-## 12. `solve_initial` and `solve_2period`
+## 12. `solve_initial`
 
-These are thin wrappers:
-
-- **`solve_initial(s0, p)`** — build the full state space, compute `V1`
-  once, create the PE caches, then call `solve_state` at $s_0$ only.
-  Returns `(V1, ccps_at_s0)`.
-- **`solve_2period(p)`** — same setup, but loops over every state in the
-  enumerated state space and calls `solve_state` for each, returning
-  `(V1, Dict{State, StateCCPs})`. The per-`s_orig` caches get rebuilt
-  each iteration; the PE caches stay populated across the loop, so later
-  calls are faster. Mainly used for estimation sweeps where you need CCPs
-  at every state.
+A thin wrapper: build the full state space, compute `V1` once, create
+the PE caches, then call `solve_state` at `s0` only. Returns
+`(V1, ccps_at_s0)`. Live callers are `scripts/run_merger.jl` (via
+`expected_welfare_mc`) and `scripts/estimate.jl` (via the MLE
+likelihood).
 
 ## 13. Where to look in the code for common questions
 
