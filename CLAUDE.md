@@ -18,15 +18,10 @@ Always activate the project from `code/`:
 ```bash
 cd code
 
-# Baseline (non-spatial) — only on main branch
-julia --project=. scripts/run_2period.jl
-
-# Regional extension + counterfactuals (uniform γ baseline, region-1 subsidy, clustered s₀)
-julia --project=. scripts/run_regional.jl
-
-# Estimation pipeline (regional branch)
+# Pipeline: simulate -> estimate -> counterfactual (regional branch)
 julia --project=. scripts/simulate_data.jl   # writes data/simulated_data.csv (500 markets)
-julia --project=. scripts/estimate.jl        # two-step estimator + writes macros & table
+julia --project=. scripts/estimate.jl        # two-step estimator: writes estimation macros + table
+julia --project=. scripts/run_merger.jl      # EU–US alliance counterfactual: K=5000 MC, CRN
 ```
 
 Compile the writeup (after re-running scripts that updated `output/`):
@@ -35,7 +30,7 @@ Compile the writeup (after re-running scripts that updated `output/`):
 cd writeup && latexmk -pdf progress_agglomeration.tex
 ```
 
-There is no test suite. The "tests" are the sanity checks printed by `run_regional.jl` (single-region collapse, near-symmetry under uniform γ, monotonicity in γ₁) and the smoke check in `simulate_data.jl` that compares empirical innovation rates to solver CCPs.
+There is no test suite. The "tests" are the smoke check in `simulate_data.jl` that compares empirical innovation rates to solver CCPs, and the `Σ_r W_r` identity check inside `run_merger.jl::check_sum_identity` (residuals at machine precision under the new calibration).
 
 ## Architecture you should know before editing the solver
 

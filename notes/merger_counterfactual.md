@@ -67,11 +67,11 @@ checks this identity numerically and finds residuals of order `1e-14`.
 Each market draws its initial state via `random_s0(rng, p)`, the same DGP
 used in `simulate_data.jl` and consumed by `estimate.jl`. The counterfactual
 is therefore evaluated on the same population the model was estimated on,
-closing the `simulate → estimate → counterfactual` loop. We do not fix a
-representative `s_0` (`run_regional.jl` does that, but only for compact
-comparative-statics displays). Using the random-`s_0` distribution lets the
-counterfactual answer "what does the alliance do *on average* across the
-markets in our sample?" rather than "at one stylised initial state."
+closing the `simulate → estimate → counterfactual` loop. Averaging over
+the random-`s_0` distribution rather than fixing a single representative
+state lets the counterfactual answer "what does the alliance do *on
+average* across the markets in our sample?" rather than "at one stylised
+initial state."
 
 ## Monte Carlo with common random numbers
 

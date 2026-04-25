@@ -20,8 +20,6 @@
 \newcommand{\indep}{\perp \!\!\! \perp}
 
 % ── Macros from estimation output ────────────────────────────────────────────
-\input{../output/estimates/2period_estimates.txt}
-\input{../output/estimates/regional_estimates.txt}
 \input{../output/estimates/estimation.txt}
 \input{../output/estimates/merger_estimates.txt}
 
@@ -184,97 +182,6 @@ data in Table~\ref{tab:params}.\\
     \bottomrule
   \end{tabular}
 \end{table}
-The initial state of interest in the non-spatial baseline is
-$s_0 = (n_o, n_b, n_n, n_{pe}) = (4,1,1,2)$, loosely inspired by the early
-HDD market structure in Igami (2017).
-
-\section{Results}
-
-\subsection{Baseline vs.\ Agglomeration}
-
-Table~\ref{tab:baseline_vs_agglom} compares equilibrium CCPs at $s_0$ for
-$\gamma = 0$ (baseline) and $\gamma = \gammaAgglom$.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{Baseline vs.\ agglomeration}
-  \medskip
-  \label{tab:baseline_vs_agglom}
-  \begin{tabular}{lcc}
-    \toprule
-     & $\gamma = 0$ & $\gamma = \gammaAgglom$ \\
-    \midrule
-    $P(\text{innovate} \mid \text{old})$ & \pInnovatBaseline & \pInnovatAgglom \\
-    $P(\text{enter}    \mid \text{pe})$  & \pEnterBaseline   & \pEnterAgglom   \\
-    \bottomrule
-  \end{tabular}
-  \caption*{\footnotesize Notes: Equilibrium CCPs at $s_0 = (4,1,1,2)$ for the
-    baseline ($\gamma = 0$) and agglomeration ($\gamma = \gammaAgglom$) specifications.}
-\end{table}
-Agglomeration raises both the innovation and entry rates. Intuitively, a
-larger innovative cluster lowers future costs for new-tech firms, raising
-the expected continuation value of innovating or entering.
-
-\subsection{Comparative Statics in $\gamma$}
-
-Table~\ref{tab:compstats} reports equilibrium CCPs as $\gamma$ varies from
-0 to 0.30, and Figure~\ref{fig:compstats} plots the same.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{Comparative statics in $\gamma$}
-  \medskip
-  \label{tab:compstats}
-  \input{../output/tables/comp_stats_agglomeration.tex}
-  \caption*{\footnotesize Notes: Equilibrium CCPs at $s_0 = (4,1,1,2)$ as the
-    agglomeration parameter $\gamma$ varies from 0 to 0.30.}
-\end{table}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.7\textwidth]{../output/figures/comp_stats_agglomeration.pdf}
-  \caption{$P(\text{innovate}\mid\text{old})$ and $P(\text{enter}\mid\text{pe})$
-           as functions of $\gamma$ at $s_0 = (4,1,1,2)$.}
-  \label{fig:compstats}
-\end{figure}
-
-\subsection{Comparative Statics in $\rho$ (Cannibalization)}
-
-Figure~\ref{fig:cannibalization} plots equilibrium CCPs as the substitution
-parameter $\rho$ varies from 0 (independent markets) to 0.95 (near-homogeneous
-goods), holding $\gamma = 0.05$.\\
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.7\textwidth]{../output/figures/comp_stats_cannibalization.pdf}
-  \caption{$P(\text{innovate}\mid\text{old})$ and $P(\text{enter}\mid\text{pe})$
-           as functions of $\rho$ at $s_0 = (4,1,1,2)$, $\gamma = 0.05$.}
-  \label{fig:cannibalization}
-\end{figure}
-
-\subsection{Discussion}
-
-Three features of the comparative statics are notable:
-\begin{enumerate}
-  \item \textbf{Positive agglomeration effect:} Higher $\gamma$ unambiguously
-        raises the innovation rate for small values of $\gamma$. This
-        confirms the model's central prediction: knowledge spillovers
-        encourage adoption.
-  \item \textbf{Cannibalization deters innovation:} Higher $\rho$ (stronger
-        substitution between old-gen and new-gen) reduces the profit of
-        ``both'' firms by depressing old-gen prices. In the calibration,
-        per-firm ``both'' profit falls from $\approx 0.531$ at $\rho=0$ to
-        $\approx 0.327$ at $\rho=0.5$. This is the central mechanism in
-        Igami (2017): incumbents are reluctant to innovate because doing so
-        cannibalizes their existing old-gen revenue. The relation is
-        nonmonotone, however: as $\rho$ approaches 1, the two markets become
-        nearly homogeneous and the incumbent benefits from innovating
-        because it can sell more of the new-gen product.
-  \item \textbf{Saturation:} The innovation rate saturates near $1/3$ for
-        large $\gamma$. This is a feature of the EVT1 / logit structure:
-        with large $\sigma$ relative to payoff differences, all actions
-        approach equal probability. In a richer calibration (smaller
-        $\sigma$), the effect would be more pronounced.
-\end{enumerate}
 
 \section{Regional Extension}
 
@@ -338,17 +245,12 @@ computed by a forward traversal of the sub-stage tree.\\
 Because the state space now has $4R = 12$ integer coordinates, we cap
 $N_{\max} = 6$ on this branch (about $1.8\times 10^4$ enumerated states) and
 pick initial states with total firm count $\le 6$. One visible artefact of
-the sequential-move convention is a small first-mover asymmetry in the
-baseline: with uniform $\gamma_r = \gammaOther$ the reported innovation
-CCPs are $(\pInnovBaselineROne,\, \pInnovBaselineRTwo,\,
-\pInnovBaselineRThree)$ rather than exactly identical across regions.
-Region~1 commits without observing anyone, while region~3 best-responds to
-the realised history; the gap is well below the magnitude of every
-counterfactual we run and does not affect any qualitative conclusion. Two
-small comparative-statics exercises that probe how innovation responds to
-parameter or initial-state perturbations are deferred to
-Appendix~\ref{app:regional_cs}; they illustrate the model's mechanics but
-do not include welfare accounting or the estimated parameter vector.
+the sequential-move convention is a small first-mover asymmetry: at any
+symmetric $s_0$ with uniform $\gamma_r$, the three regions' CCPs differ by
+at most $10^{-3}$. Region~1 commits without observing anyone, while
+region~3 best-responds to the realised history. The gap is well below the
+magnitude of every counterfactual difference reported in
+Section~\ref{sec:merger}.
 
 \section{Estimation on Simulated Data}
 \label{sec:estimation}
@@ -625,9 +527,9 @@ the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
         equation~\eqref{eq:bloc_pool}, would let one region's higher
         absorptive capacity amplify the alliance's effect.
   \item \textbf{Fiscal cost of policy.} The current welfare accounting
-        prices in firms' costs paid but does not net out the fiscal cost
-        of any subsidy (e.g.\ the $\gamma_1$ tilt of CS-A in
-        Appendix~\ref{app:regional_cs}). Adding government revenue/cost
+        prices in firms' own costs paid but does not net out the fiscal
+        cost of any subsidy a government would need to deliver to enlarge
+        $\gamma_r$ in a target region. Adding government revenue and cost
         makes the targeted-subsidy and alliance scenarios directly
         comparable as policy levers.
   \item \textbf{$T > 2$ horizon.} A genuine multi-period extension would
@@ -636,105 +538,5 @@ the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
         The current 2-period setup avoids this because period~2 is
         terminal.
 \end{enumerate}
-
-\appendix
-\section{Simple comparative-statics exercises in the regional model}
-\label{app:regional_cs}
-
-These are illustrative exercises, not full counterfactuals. Both stay
-inside the regional model and ask how innovation responds to a small
-parameter or initial-state perturbation. They use a smaller baseline
-$\gamma = \gammaOther$ rather than the Table~\ref{tab:params} default of
-$0.15$, which lets the policy perturbation
-$\gamma_1 = \gammaSubsidyOne$ act as a clean tripling of region~1's
-spillover and keeps every scenario well below the cost-floor saturation
-that sets in around $\gamma \gtrsim 0.30$. All other parameters are held
-at the values of Table~\ref{tab:params}. Welfare accounting and the
-estimated parameter vector are reserved for the proper counterfactual in
-Section~\ref{sec:merger}.\\
-
-We solve the regional model at two initial states, both with total firm
-count 6:
-\begin{itemize}
-  \item \textbf{Symmetric $s_0$:} $s_0^{\mathrm{sym}} =
-        \bigl((1,1,1), (1,1,1), (0,0,0), (0,0,0)\bigr)$. One old incumbent
-        and one ``both'' incumbent in each region, no entrants.
-  \item \textbf{Clustered $s_0$:} $s_0^{\mathrm{clust}} =
-        \bigl((1,1,1), (3,0,0), (0,0,0), (0,0,0)\bigr)$. Same total number
-        of firms of each type, but all three ``both'' incumbents are
-        concentrated in region~1.
-\end{itemize}
-Starting from $s_0^{\mathrm{sym}}$ with uniform $\gamma_r = \gammaOther$ we
-verify a \textbf{symmetry check}: the three regions' CCPs are nearly
-identical, with only tiny differences (on the order of $10^{-3}$) that
-reflect the sequential region-move structure of Section~\ref{sec:merger}'s
-solver rather than any substantive break in the model's permutation
-symmetry when the state and parameters are symmetric.\\
-
-We then run two comparative statics against this baseline. \textbf{CS-A}
-subsidises innovation in region~1 by tripling its agglomeration strength
-to $\gamma_1 = \gammaSubsidyOne$ while leaving $\gamma_2 = \gamma_3 =
-\gammaOther$. \textbf{CS-B} holds $\gamma_r$ uniform but starts from the
-clustered initial state $s_0^{\mathrm{clust}}$, asking whether a
-historical concentration of innovators is enough to lock in innovation
-leadership even without a policy tilt.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{Regional innovation CCPs by scenario}
-  \medskip
-  \label{tab:regional_comparative_statics}
-  \input{../output/tables/regional_comp_stats.tex}
-  \caption*{\footnotesize Notes: Reports $P(\text{innovate}\mid\text{old}, r)$ for
-    each region. Baseline uses $s_0^{\mathrm{sym}}$ with uniform
-    $\gamma = \gammaOther$; CS-A sets $\gamma_1 = \gammaSubsidyOne$
-    (regions~2 and~3 held at $\gammaOther$); CS-B uses the clustered initial
-    state $s_0^{\mathrm{clust}}$ with uniform $\gamma = \gammaOther$.}
-\end{table}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/regional_subsidy.pdf}
-  \caption{Regional innovation rates as $\gamma_1$ varies while
-           $\gamma_2 = \gamma_3 = \gammaOther$ is held fixed. Region~1
-           responds positively to its own subsidy; regions~2 and~3 are
-           slightly depressed through the global Cournot channel.}
-  \label{fig:regional_subsidy}
-\end{figure}
-Three findings stand out in Table~\ref{tab:regional_comparative_statics}
-and Figure~\ref{fig:regional_subsidy}:
-\begin{enumerate}
-  \item \textbf{Targeted subsidies work, but leak.} Raising $\gamma_1$ from
-        \gammaOther\ to \gammaSubsidyOne\ moves region~1's innovation
-        probability from \pInnovBaselineROne\ to \pInnovSubsidyROne, a gain
-        of roughly several percentage points. Regions~2 and~3 fall from
-        \pInnovBaselineRTwo\ to \pInnovSubsidyRTwo. The spillover is small
-        but clearly negative, driven entirely by the \emph{global} product
-        market: more innovation in region~1 lowers expected new-gen prices
-        everywhere, eroding the option value of innovating in the other
-        regions.
-  \item \textbf{Historical clusters alone are weak.} Starting from
-        $s_0^{\mathrm{clust}}$ the incumbent cluster in region~1 barely
-        moves innovation there ($\pInnovClusterROne$ vs.\ $\pInnovBaselineROne$
-        in the symmetric baseline): with only one remaining old firm in
-        region~1, the region's marginal old firm is already close to
-        saturating its own local spillover. The larger effect shows up in
-        regions~2 and~3, whose CCPs fall to $\pInnovClusterRTwo$ because of
-        the global-market pressure from the concentrated region-1
-        innovators. A one-shot historical endowment is therefore a much
-        weaker policy lever than a continuing subsidy.
-  \item \textbf{The spillover wedge is still local.} Comparing CS-A and
-        CS-B makes clear that what drives region~1's innovation is not how
-        many innovators are in the region today but the
-        \emph{marginal reduction in new-tech cost} each additional
-        innovator delivers. The policy CS-A tilts that reduction directly,
-        which is why it dominates a pure history-based CS-B at the same
-        total cluster size.
-\end{enumerate}
-The two exercises illustrate how the regional model bridges Igami's
-replacement-effect story with the industrial-policy literature: even a
-modest, regionally targeted spillover subsidy reshapes the geographic
-distribution of innovation at the cost of a small drag on the rest of the
-world, with magnitudes that depend on the level of cannibalization $\rho$
-and the strength of the local externality $\gamma_r$.
 
 \end{document}
