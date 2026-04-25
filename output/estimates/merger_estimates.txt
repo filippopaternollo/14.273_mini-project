@@ -27,3 +27,8 @@
 \newcommand{\MergerWelfDeltaRTwo}{+0.0453}
 \newcommand{\MergerWelfDeltaRThree}{+0.0027}
 \newcommand{\MergerWelfDeltaTotal}{+0.0923}
+% Welfare percent change relative to baseline (formatted with leading sign)
+\newcommand{\MergerWelfPctROne}{+2.40}
+\newcommand{\MergerWelfPctRTwo}{+2.46}
+\newcommand{\MergerWelfPctRThree}{+0.15}
+\newcommand{\MergerWelfPctTotal}{+1.66}
