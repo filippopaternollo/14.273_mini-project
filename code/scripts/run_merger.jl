@@ -138,38 +138,47 @@ for k_test in (500, 1000, 5000)
             k_test, Δw..., pw..., ps)
 end
 
-# ── Plot 1: innovation rate by region, baseline vs alliance ─────────────────
-# Plots.bar with a matrix puts the two columns side by side as grouped bars.
-xs = ["Region 1", "Region 2", "Region 3"]
-plt_innov = bar(
-    xs,
-    [collect(w_base.innov_rate_by_region) collect(w_alli.innov_rate_by_region)],
-    label  = ["Baseline" "Alliance {1,2}"],
-    xlabel = "Region",
-    ylabel = "Innovation rate (period-1 old → both)",
-    title  = "Innovation rate by region under EU–US alliance",
-    legend = :topright,
-    grid   = true,
-    size   = (700, 420),
+# ── Plot helpers: side-by-side grouped bars at offset x-coords ──────────────
+# Plots.bar with a matrix overlays the series rather than dodging them, so we
+# place the two series at hand-tuned x-offsets and use bar_width to keep them
+# from touching.
+const REGION_LABELS = ["Region 1", "Region 2", "Region 3"]
+const X_BASE = [0.8, 1.8, 2.8]
+const X_ALLI = [1.2, 2.2, 3.2]
+const BW     = 0.36
+
+function grouped_bar(values_base, values_alli; ylabel, title, fig_path)
+    plt = bar(X_BASE, values_base;
+              bar_width = BW, label = "Baseline",
+              color = :steelblue, linecolor = :steelblue,
+              xlabel = "Region", ylabel = ylabel, title = title,
+              xticks = (1:3, REGION_LABELS), xlims = (0.4, 3.6),
+              legend = :topright, grid = :y, size = (720, 430))
+    bar!(plt, X_ALLI, values_alli;
+         bar_width = BW, label = "Alliance \\{1, 2\\}",
+         color = :tomato, linecolor = :tomato)
+    savefig(plt, fig_path)
+    return fig_path
+end
+
+# ── Plot 1: innovation rate by region ───────────────────────────────────────
+fig_innov_path = grouped_bar(
+    collect(w_base.innov_rate_by_region),
+    collect(w_alli.innov_rate_by_region);
+    ylabel   = "P(innovate | old)",
+    title    = "Innovation rate by region under EU–US alliance",
+    fig_path = joinpath(OUT_FIG, "merger_innovation.pdf"),
 )
-fig_innov_path = joinpath(OUT_FIG, "merger_innovation.pdf")
-savefig(plt_innov, fig_innov_path)
 println("\nSaved figure: $fig_innov_path")
 
-# ── Plot 2: per-region welfare components, baseline vs alliance ─────────────
-plt_welfare = bar(
-    xs,
-    [collect(w_base.welfare_by_region) collect(w_alli.welfare_by_region)],
-    label  = ["Baseline" "Alliance {1,2}"],
-    xlabel = "Region",
-    ylabel = "Discounted per-region welfare W_r",
-    title  = "Welfare by region under EU–US alliance",
-    legend = :topright,
-    grid   = true,
-    size   = (700, 420),
+# ── Plot 2: per-region welfare ──────────────────────────────────────────────
+fig_welfare_path = grouped_bar(
+    collect(w_base.welfare_by_region),
+    collect(w_alli.welfare_by_region);
+    ylabel   = "Discounted per-region welfare W_r",
+    title    = "Welfare by region under EU–US alliance",
+    fig_path = joinpath(OUT_FIG, "merger_welfare.pdf"),
 )
-fig_welfare_path = joinpath(OUT_FIG, "merger_welfare.pdf")
-savefig(plt_welfare, fig_welfare_path)
 println("Saved figure: $fig_welfare_path")
 
 # ── Results table (booktabs) ────────────────────────────────────────────────

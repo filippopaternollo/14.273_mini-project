@@ -88,7 +88,7 @@ println("  Figure saved to: $fig_path")
 
 # ── Summary table ────────────────────────────────────────────────────────────
 df = DataFrame(
-    Scenario = ["Baseline", "CF-A: subsidy r1", "CF-B: cluster r1"],
+    Scenario = ["Baseline", "CS-A: subsidy r1", "CS-B: cluster r1"],
     p_io_r1  = [c_base.p_io[1], c_cfA.p_io[1], c_cfB.p_io[1]],
     p_io_r2  = [c_base.p_io[2], c_cfA.p_io[2], c_cfB.p_io[2]],
     p_io_r3  = [c_base.p_io[3], c_cfA.p_io[3], c_cfB.p_io[3]],
