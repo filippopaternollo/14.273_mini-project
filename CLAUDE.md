@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Extension of Igami (2017) "Making Oligopoly" (HDD industry dynamic oligopoly) for 14.273 (MIT). Adds **agglomeration spillovers** to a 2-period dynamic oligopoly with two technology generations (old / new) and four firm types (`old`, `both`, `new`, `pe`). Two branches share the same module layout but differ in state space and solver:
 
 - `main` — non-spatial baseline. Scalar state `(n_o, n_b, n_n, n_pe)`, single global new-tech cost `c_n,t = c_n0 − γ·(n_b + n_n)`.
-- `regional-agglomeration` (and downstream branches like `writeup_edits`) — `R = 3` regions, each firm count is an `NTuple{3,Int}`, **regional** new-tech cost `c_n,r = c_n0 − γ_r·(n_b[r] + n_n[r])`, **global** Cournot competition. This is the active development branch.
+- `regional-agglomeration` (and downstream branches like `writeup_edits`, `merger-counterfactual`) — `R = 3` regions, each firm count is an `NTuple{3,Int}`, **global** Cournot competition. The new-tech cost is bloc-pooled: `c_n,r = c_n0 − γ_r · Σ_{r' ∈ bloc(r)} (n_b[r'] + n_n[r'])`, where `bloc(r) = {r' : p.blocs[r'] == p.blocs[r]}`. The default `Params.blocs == (1, 2, 3)` puts every region in its own pool and recovers the purely local spec. Setting equal bloc ids (e.g. `blocs == (1, 1, 2)`) merges those regions into a shared spillover pool — the mechanism behind the alliance counterfactual on `merger-counterfactual`.
 
 Calibration is illustrative throughout (`default_params()` in `code/src/parameters.jl`); replacing it with Igami's Table 3 estimates is on the to-do list.
 

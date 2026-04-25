@@ -35,11 +35,29 @@ const OUT_EST    = joinpath(OUTPUT_DIR, "estimates")
 mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST)
 
 # ── Calibration: estimated parameters ───────────────────────────────────────
-# From output/estimates/estimation.txt at the (γ, σ) = (0.15, 0.5) calibration:
-#   κ̂ = 0.3002,  φ̂ = 0.1777,  γ̂ = (0.15, 0.15, 0.15)
-const KAPPA_HAT = 0.3002
-const PHI_HAT   = 0.1777
-const GAMMA_HAT = (0.15, 0.15, 0.15)
+# Read directly from the macros that estimate.jl wrote so the counterfactual
+# always uses the latest estimates, with no hand-typed copies to drift.
+const EST_PATH = joinpath(OUTPUT_DIR, "estimates", "estimation.txt")
+
+"""
+    read_macro(path, name) → Float64
+
+Parse a `\\newcommand{\\<name>}{<value>}` line from a LaTeX macros file.
+"""
+function read_macro(path::String, name::String)
+    pat = Regex("\\\\newcommand\\{\\\\$name\\}\\{([^}]+)\\}")
+    for line in eachline(path)
+        m = match(pat, line)
+        m !== nothing && return parse(Float64, m.captures[1])
+    end
+    error("Macro \\$name not found in $path")
+end
+
+const KAPPA_HAT = read_macro(EST_PATH, "InnovCostHat")
+const PHI_HAT   = read_macro(EST_PATH, "EntryCostHat")
+const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
+                   read_macro(EST_PATH, "SpilloverTwoHat"),
+                   read_macro(EST_PATH, "SpilloverThreeHat"))
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000

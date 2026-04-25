@@ -22,8 +22,9 @@ Per-region two-period discounted welfare:
       + PS_r(s_0) + β·PS_r(s_1)                             ← own-region producer surplus
       − κ · k_innov_r − φ · k_enter_r                       ← own-region costs paid
 
-By construction Σ_r W_r = CS_total + Σ_r PS_r − Σ_r costs_r, which is
-checked numerically inside `expected_welfare_mc`.
+By construction Σ_r W_r = CS_total + Σ_r PS_r − Σ_r costs_r.  This
+identity is verified numerically by `code/scripts/run_merger.jl`
+(`check_sum_identity`); residuals are at machine precision.
 
 The `expected_welfare_mc(p; ...)` driver runs `n_markets` independent
 simulations through `simulate_market`, drawing each market's `s_0` from
@@ -147,12 +148,12 @@ function welfare_for_market(rows, p::Params)
     return (
         cs_p1              = cs_p1,
         cs_p2              = cs_p2,
-        ps_by_region       = NTuple{R,Float64}(ps_r),
+        ps_by_region       = ntuple(r -> ps_r[r],      R),
         costs_by_region    = costs_r,
-        k_innov_by_region  = NTuple{R,Int}(k_innov_r),
-        k_enter_by_region  = NTuple{R,Int}(k_enter_r),
-        n_old_by_region    = NTuple{R,Int}(n_old_r),
-        n_pe_by_region     = NTuple{R,Int}(n_pe_r),
+        k_innov_by_region  = ntuple(r -> k_innov_r[r], R),
+        k_enter_by_region  = ntuple(r -> k_enter_r[r], R),
+        n_old_by_region    = ntuple(r -> n_old_r[r],   R),
+        n_pe_by_region     = ntuple(r -> n_pe_r[r],    R),
         welfare_by_region  = welfare_r,
     )
 end
