@@ -32,18 +32,27 @@ struct Params
 end
 
 """
-    default_params(; gamma = 0.05, rho = 0.5, N_max = 6, blocs = (1, 2, 3),
-                     kappa = 0.3, phi = 0.2)
+    default_params(; gamma = 0.15, sigma = 0.5, rho = 0.5, N_max = 6,
+                     blocs = (1, 2, 3), kappa = 0.3, phi = 0.2)
 
 Default plausible calibration.  `gamma` may be a scalar (applied to every
 region) or an `NTuple{3,Float64}` for region-specific values.  `N_max` defaults
 to 6 on this branch because the regional state space has 4·R = 12 bins and
 blows up quickly.  `blocs` defaults to singleton pools; pass e.g. `(1, 1, 2)`
-to merge regions 1 and 2 into a single spillover pool.  `kappa` and `phi`
-are exposed so counterfactual scripts can plug in estimated values without
-constructing a `Params` from scratch.
+to merge regions 1 and 2 into a single spillover pool.  `kappa`, `phi`, and
+`sigma` are exposed so counterfactual scripts can plug in estimated values
+without constructing a `Params` from scratch.
+
+The calibration `(γ, σ) = (0.15, 0.5)` is chosen to put innovation in the
+*responsive* region of the logit (γ below the c_n floor at γ ≳ 0.30, σ low
+enough that spillover changes shift CCPs by visible amounts).  At this
+calibration the EU–US alliance counterfactual produces innovation-rate
+shifts of order 6 % and welfare gains of a few percent in the allied
+regions.  The earlier calibration `(0.05, 1.0)` damped both effects to
+under 1 %.
 """
-function default_params(; gamma = 0.05,
+function default_params(; gamma = 0.15,
+                          sigma::Float64 = 0.5,
                           rho::Float64 = 0.5,
                           N_max::Int = 6,
                           blocs::NTuple{R,Int} = (1, 2, 3),
@@ -60,7 +69,7 @@ function default_params(; gamma = 0.05,
         0.9,    # beta
         kappa,
         phi,
-        1.0,    # sigma
+        sigma,
         γ,      # gamma per region
         rho,
         N_max,

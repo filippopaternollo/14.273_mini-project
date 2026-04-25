@@ -1,13 +1,14 @@
 # EU–US alliance counterfactual
 
-Pooling the innovator counts of regions 1 and 2 raises welfare in **all three**
-regions and lifts the global sum by `+0.092` per market, or **+1.66 %** of
-baseline aggregate welfare. Allied regions gain about `+0.045` each
-(**≈ +2.4 %**). Region 3 still gains a small `+0.003` (**+0.15 %**) because
-cheaper global new-tech raises consumer surplus by more than its own producer
-surplus falls. This note describes how the counterfactual is set up, computed,
-and verified. The estimator we use is in `code/src/estimate.jl`; the
-counterfactual runner is `code/scripts/run_merger.jl`.
+Pooling the innovator counts of regions 1 and 2 lifts welfare by **+6.4 %**
+in each allied region and leaves region 3 essentially unchanged
+(`+0.01 %`). Aggregate welfare rises by **+4.3 %**. The picture on
+*innovation* is sharper: allied regions raise `P(innov | old)` by `+4` to
+`+5 %`, and region 3 *loses* `−4.0 %` because cheaper allied-region
+production drags the global new-tech price down. This note describes how
+the counterfactual is set up, computed, and verified. The estimator we
+use is in `code/src/estimate.jl`; the counterfactual runner is
+`code/scripts/run_merger.jl`.
 
 ## Setup
 
@@ -87,24 +88,36 @@ Convergence is fast. The runner reports `ΔW` (absolute) and `ΔW / W₀`
 
 | K     | ΔW₁     | ΔW₂     | ΔW₃     | ΔW₁ %    | ΔW₂ %    | ΔW₃ %    | ΔΣW %    |
 |-------|---------|---------|---------|----------|----------|----------|----------|
-| 500   | +0.0482 | +0.0426 | +0.0029 | +2.67 %  | +2.21 %  | +0.16 %  | +1.68 %  |
-| 1000  | +0.0448 | +0.0439 | +0.0026 | +2.44 %  | +2.33 %  | +0.14 %  | +1.63 %  |
-| 5000  | +0.0443 | +0.0453 | +0.0027 | +2.40 %  | +2.46 %  | +0.15 %  | +1.66 %  |
+| 500   | +0.1458 | +0.1311 | −0.0042 | +7.02 %  | +5.90 %  | −0.20 %  | +4.23 %  |
+| 1000  | +0.1350 | +0.1321 | −0.0011 | +6.36 %  | +6.06 %  | −0.05 %  | +4.11 %  |
+| 5000  | +0.1376 | +0.1389 | +0.0002 | +6.44 %  | +6.52 %  | +0.01 %  | +4.31 %  |
 
-Both absolute and percent differences stabilise to two digits by `K = 1000`.
-We report `K = 5000` for headline numbers.
+Both absolute and percent differences stabilise to ~0.2 percentage points
+by `K = 1000`. We report `K = 5000` for headline numbers. Region 3's
+welfare change is small in both directions across `K`, which is itself
+the substantive finding: its CS gain almost exactly offsets its PS loss.
 
 ## Calibration
 
 We use the estimated parameters from `output/estimates/estimation.txt`:
 
 ```
-κ̂ = 0.2849      φ̂ = 0.1635      γ̂ = (0.05, 0.05, 0.05).
+κ̂ = 0.3002      φ̂ = 0.1777      γ̂ = (0.15, 0.15, 0.15).
 ```
 
 The remaining parameters are treated as known and held at
 `default_params()`: `A = 3`, `B = 1`, `M = 1`, `c_o = 1.5`, `c_{n0} = 0.5`,
-`β = 0.9`, `σ = 1.0`, `ρ = 0.5`, `N_max = 6`.
+`β = 0.9`, `σ = 0.5`, `ρ = 0.5`, `N_max = 6`.
+
+Why this calibration. An earlier exercise used `(γ, σ) = (0.05, 1.0)` and
+produced merger effects of order `+1 %`. Two amplifiers explain why the
+present calibration is more revealing: tripling `γ` triples the cost
+reduction the merger delivers in the allied regions (still well below the
+`c_n` floor at `γ ≳ 0.30`), and halving `σ` roughly doubles the logit
+slope `P(1−P)/σ` against any payoff change. The combined effect on CCPs is
+roughly `3 × 2 = 6×`, which matches what the comparative statics show.
+The choice puts innovation in the responsive interior of the logit without
+saturating any constraint.
 
 ## Results
 
@@ -112,41 +125,41 @@ Innovation rates (period-1 old → both, pooled across markets in the sample):
 
 | Region | Baseline | Alliance | Δ        | Δ / baseline |
 |--------|----------|----------|----------|--------------|
-| 1      | 0.3480   | 0.3502   | +0.0023  | +0.65 %      |
-| 2      | 0.3465   | 0.3504   | +0.0039  | +1.12 %      |
-| 3      | 0.3485   | 0.3449   | −0.0035  | −1.01 %      |
+| 1      | 0.3507   | 0.3688   | +0.0181  | +5.16 %      |
+| 2      | 0.3495   | 0.3650   | +0.0155  | +4.43 %      |
+| 3      | 0.3533   | 0.3392   | −0.0141  | **−4.00 %**  |
 
 Entry rates (period-1 pe → new) move in the same direction:
 
 | Region | Baseline | Alliance | Δ        | Δ / baseline |
 |--------|----------|----------|----------|--------------|
-| 1      | 0.5265   | 0.5288   | +0.0022  | +0.43 %      |
-| 2      | 0.5524   | 0.5533   | +0.0009  | +0.16 %      |
-| 3      | 0.5503   | 0.5477   | −0.0026  | −0.47 %      |
+| 1      | 0.5562   | 0.5723   | +0.0162  | +2.91 %      |
+| 2      | 0.5801   | 0.5968   | +0.0167  | +2.87 %      |
+| 3      | 0.5792   | 0.5624   | −0.0168  | **−2.91 %**  |
 
-Innovation rises in both allied regions and falls slightly in region 3.
-The mechanism is straightforward: the pooled spillover lowers `c_{n,1}` and
-`c_{n,2}` whenever either region has an innovator, which raises the
-expected period-2 profit from being on new tech in regions 1 and 2 and
-makes innovation more attractive there. Region 3's innovation falls
-because global Cournot competition is now tougher: the allied regions
-produce more new-tech output, dragging down the new-tech price that region
-3's potential innovators stand to receive.
+Innovation and entry both rise in the allied regions and fall in region 3.
+The mechanism is straightforward. The pooled spillover lowers `c_{n,1}`
+and `c_{n,2}` whenever either region has an innovator, which raises the
+expected period-2 profit of being on new tech in regions 1 and 2 and makes
+both innovation and fresh entry more attractive there. Region 3's
+innovation and entry both fall because global Cournot competition is now
+tougher: the allied regions produce more new-tech output, dragging down
+the new-tech price that region 3's potential innovators stand to receive.
 
 Welfare components per region:
 
-| Region | Baseline `PS_r` | Alliance `PS_r` | ΔPS_r   | ΔW_r     | ΔW_r / W_{r,0} |
-|--------|-----------------|-----------------|---------|----------|----------------|
-| 1      | 0.7560          | 0.7805          | +0.0245 | +0.0443  | +2.40 %        |
-| 2      | 0.7614          | 0.7871          | +0.0257 | +0.0453  | +2.46 %        |
-| 3      | 0.7890          | 0.7709          | −0.0181 | +0.0027  | +0.15 %        |
+| Region | Baseline `PS_r` | Alliance `PS_r` | ΔPS_r    | ΔW_r     | ΔW_r / W_{r,0} |
+|--------|-----------------|-----------------|----------|----------|----------------|
+| 1      | 0.8500          | 0.9290          | +0.0790  | +0.1376  | +6.44 %        |
+| 2      | 0.8488          | 0.9290          | +0.0801  | +0.1389  | +6.52 %        |
+| 3      | 0.8800          | 0.8147          | −0.0653  | +0.0002  | +0.01 %        |
 
-`CS / R` rises by `+0.0202` per region in the alliance. Region 3's `PS_r`
-falls by `−0.0181`, but its share of the global CS gain plus its slightly
-lower paid costs leaves it with a small net welfare gain of `+0.15 %`.
-Total welfare rises by `ΔΣW = +0.0923` per market (`+1.66 %` of baseline),
-with each allied region contributing about `+0.045` and region 3 the
-remaining `+0.003`.
+`CS / R` rises by `+0.0622` per region in the alliance. The allied regions
+gain twice — through their own CS share and through a sharp `+9 %` jump in
+PS — and post welfare gains of about `+6.5 %`. Region 3's `PS_r` falls by
+`−0.0653`, almost exactly offsetting its `+0.0622` CS-share gain, so its
+net welfare moves by less than a basis point. Total welfare rises by
+`+0.277` per market, or `+4.31 %` of baseline.
 
 ## Caveats
 

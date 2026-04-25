@@ -35,11 +35,11 @@ const OUT_EST    = joinpath(OUTPUT_DIR, "estimates")
 mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST)
 
 # ── Calibration: estimated parameters ───────────────────────────────────────
-# From output/estimates/estimation.txt (writeup_edits @ 2026-04-15):
-#   κ̂ = 0.2849,  φ̂ = 0.1635,  γ̂ = (0.05, 0.05, 0.05)
-const KAPPA_HAT = 0.2849
-const PHI_HAT   = 0.1635
-const GAMMA_HAT = (0.05, 0.05, 0.05)
+# From output/estimates/estimation.txt at the (γ, σ) = (0.15, 0.5) calibration:
+#   κ̂ = 0.3002,  φ̂ = 0.1777,  γ̂ = (0.15, 0.15, 0.15)
+const KAPPA_HAT = 0.3002
+const PHI_HAT   = 0.1777
+const GAMMA_HAT = (0.15, 0.15, 0.15)
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000
