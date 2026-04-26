@@ -142,12 +142,15 @@ pct_ΣW    = safepct(Δ_total, w_base.total_welfare)
 @printf("  Δ ΣW            : %+.4f   (%+.2f%% of baseline ΣW)\n", Δ_total, pct_ΣW)
 
 # ── K-stability diagnostic ─────────────────────────────────────────────────
+# Reuses the headline run at K = N_MARKETS instead of recomputing it.
 println("\n=== K-stability of Δ welfare (seed-matched, CRN) ===")
 @printf("  %5s | %10s %10s %10s | %10s %10s %10s | %10s\n",
         "K", "ΔW₁", "ΔW₂", "ΔW₃", "ΔW₁ %", "ΔW₂ %", "ΔW₃ %", "ΔΣW %")
 for k_test in (500, 1000, 5000)
-    wb = expected_welfare_mc(p_base; n_markets = k_test, seed = SEED)
-    wa = expected_welfare_mc(p_alli; n_markets = k_test, seed = SEED)
+    wb = k_test == N_MARKETS ? w_base :
+         expected_welfare_mc(p_base; n_markets = k_test, seed = SEED)
+    wa = k_test == N_MARKETS ? w_alli :
+         expected_welfare_mc(p_alli; n_markets = k_test, seed = SEED)
     Δw = ntuple(r -> wa.welfare_by_region[r] - wb.welfare_by_region[r], R)
     pw = ntuple(r -> 100.0 * Δw[r] / wb.welfare_by_region[r], R)
     Δs = wa.total_welfare - wb.total_welfare
