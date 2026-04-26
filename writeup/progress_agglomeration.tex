@@ -380,16 +380,17 @@ on its own innovators, equation~\eqref{eq:local_agglom}. Under the alliance
 of $\{1, 2\}$, regions~1 and~2 share an enlarged pool:
 \begin{equation}
   c_{n,r,t}^{\mathrm{alliance}}
-    = c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
-      \bigl(n_{b,r',t} + n_{n,r',t}\bigr),
+    = \max\!\left\{0,\; c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
+      \bigl(n_{b,r',t} + n_{n,r',t}\bigr)\right\},
   \qquad
   \mathrm{bloc}(1) = \mathrm{bloc}(2) = \{1, 2\},\
   \mathrm{bloc}(3) = \{3\}.
   \label{eq:bloc_pool}
 \end{equation}
-The implementation adds a single \texttt{blocs} field to the parameter
-struct; the default \texttt{(1,2,3)} recovers equation~\eqref{eq:local_agglom}
-bit-for-bit.
+The cost floor prevents the marginal cost from turning negative; under the
+calibration $\gamma \le 0.15$ this constraint never binds. The implementation
+adds a single \texttt{blocs} field to the parameter struct; the default
+\texttt{(1,2,3)} recovers equation~\eqref{eq:local_agglom} bit-for-bit.
 
 \subsection{Welfare}
 
