@@ -142,19 +142,33 @@ function welfare_for_market(rows, p::Params)
     cs_p2 = consumer_surplus_from_quantities(Q_o2, Q_n2, p)
     cs_total_disc = cs_p1 + p.beta * cs_p2
 
+    # Resource cost is the full κ × k_innov (and φ × k_enter); the subsidy is
+    # a transfer that does NOT reduce social resource use.
     costs_r = ntuple(r -> p.kappa * k_innov_r[r] + p.phi * k_enter_r[r], R)
+
+    # Each region is treated as a sovereign country: its own government funds
+    # its own subsidy from its own taxpayers. The transfer τ_r·k_innov_r flows
+    # from region r's taxpayers to region r's firms and cancels exactly within
+    # region r's welfare — it never crosses borders. Regions with no subsidy
+    # see no transfer term at all. We still track the (gross) outlay and
+    # firm-side receipts so the reporting layer can show them.
+    subsidy_received_r = ntuple(r -> p.subsidy[r] * k_innov_r[r], R)
+    gov_outlay_total   = sum(subsidy_received_r)
+
     welfare_r = ntuple(r -> cs_total_disc / R + ps_r[r] - costs_r[r], R)
 
     return (
-        cs_p1              = cs_p1,
-        cs_p2              = cs_p2,
-        ps_by_region       = ntuple(r -> ps_r[r],      R),
-        costs_by_region    = costs_r,
-        k_innov_by_region  = ntuple(r -> k_innov_r[r], R),
-        k_enter_by_region  = ntuple(r -> k_enter_r[r], R),
-        n_old_by_region    = ntuple(r -> n_old_r[r],   R),
-        n_pe_by_region     = ntuple(r -> n_pe_r[r],    R),
-        welfare_by_region  = welfare_r,
+        cs_p1                      = cs_p1,
+        cs_p2                      = cs_p2,
+        ps_by_region               = ntuple(r -> ps_r[r],      R),
+        costs_by_region            = costs_r,
+        subsidy_received_by_region = subsidy_received_r,
+        gov_outlay_total           = gov_outlay_total,
+        k_innov_by_region          = ntuple(r -> k_innov_r[r], R),
+        k_enter_by_region          = ntuple(r -> k_enter_r[r], R),
+        n_old_by_region            = ntuple(r -> n_old_r[r],   R),
+        n_pe_by_region             = ntuple(r -> n_pe_r[r],    R),
+        welfare_by_region          = welfare_r,
     )
 end
 
@@ -189,13 +203,15 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
     ev_pe  = Dict{Tuple{State,Int}, EV}()
 
     cs_p1 = 0.0;  cs_p2 = 0.0
-    ps_r       = zeros(Float64, R)
-    costs_r    = zeros(Float64, R)
-    welfare_r  = zeros(Float64, R)
-    k_innov_r  = zeros(Int, R)
-    k_enter_r  = zeros(Int, R)
-    n_old_r    = zeros(Int, R)
-    n_pe_r     = zeros(Int, R)
+    ps_r            = zeros(Float64, R)
+    costs_r         = zeros(Float64, R)
+    welfare_r       = zeros(Float64, R)
+    subsidy_recv_r  = zeros(Float64, R)
+    gov_outlay_tot  = 0.0
+    k_innov_r       = zeros(Int, R)
+    k_enter_r       = zeros(Int, R)
+    n_old_r         = zeros(Int, R)
+    n_pe_r          = zeros(Int, R)
 
     for k in 1:n_markets
         rng = MersenneTwister(seed + k)
@@ -204,36 +220,41 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
         w = welfare_for_market(rows, p)
         cs_p1 += w.cs_p1
         cs_p2 += w.cs_p2
+        gov_outlay_tot += w.gov_outlay_total
         for r in 1:R
-            ps_r[r]      += w.ps_by_region[r]
-            costs_r[r]   += w.costs_by_region[r]
-            welfare_r[r] += w.welfare_by_region[r]
-            k_innov_r[r] += w.k_innov_by_region[r]
-            k_enter_r[r] += w.k_enter_by_region[r]
-            n_old_r[r]   += w.n_old_by_region[r]
-            n_pe_r[r]    += w.n_pe_by_region[r]
+            ps_r[r]           += w.ps_by_region[r]
+            costs_r[r]        += w.costs_by_region[r]
+            welfare_r[r]      += w.welfare_by_region[r]
+            subsidy_recv_r[r] += w.subsidy_received_by_region[r]
+            k_innov_r[r]      += w.k_innov_by_region[r]
+            k_enter_r[r]      += w.k_enter_by_region[r]
+            n_old_r[r]        += w.n_old_by_region[r]
+            n_pe_r[r]         += w.n_pe_by_region[r]
         end
     end
 
     K = n_markets
     cs_p1 /= K
     cs_p2 /= K
-    ps_avg       = ntuple(r -> ps_r[r] / K,       R)
-    costs_avg    = ntuple(r -> costs_r[r] / K,    R)
-    welfare_avg  = ntuple(r -> welfare_r[r] / K,  R)
-    innov_rate   = ntuple(r -> n_old_r[r] > 0 ? k_innov_r[r] / n_old_r[r] : 0.0, R)
-    enter_rate   = ntuple(r -> n_pe_r[r]  > 0 ? k_enter_r[r] / n_pe_r[r]  : 0.0, R)
+    ps_avg           = ntuple(r -> ps_r[r] / K,            R)
+    costs_avg        = ntuple(r -> costs_r[r] / K,         R)
+    welfare_avg      = ntuple(r -> welfare_r[r] / K,       R)
+    subsidy_recv_avg = ntuple(r -> subsidy_recv_r[r] / K,  R)
+    innov_rate       = ntuple(r -> n_old_r[r] > 0 ? k_innov_r[r] / n_old_r[r] : 0.0, R)
+    enter_rate       = ntuple(r -> n_pe_r[r]  > 0 ? k_enter_r[r] / n_pe_r[r]  : 0.0, R)
 
     return (
-        cs_p1                = cs_p1,
-        cs_p2                = cs_p2,
-        ps_by_region         = ps_avg,
-        costs_by_region      = costs_avg,
-        welfare_by_region    = welfare_avg,
-        innov_rate_by_region = innov_rate,
-        enter_rate_by_region = enter_rate,
-        total_welfare        = sum(welfare_avg),
-        n_markets            = K,
-        seed                 = seed,
+        cs_p1                       = cs_p1,
+        cs_p2                       = cs_p2,
+        ps_by_region                = ps_avg,
+        costs_by_region             = costs_avg,
+        subsidy_received_by_region  = subsidy_recv_avg,
+        gov_outlay_total            = gov_outlay_tot / K,
+        welfare_by_region           = welfare_avg,
+        innov_rate_by_region        = innov_rate,
+        enter_rate_by_region        = enter_rate,
+        total_welfare               = sum(welfare_avg),
+        n_markets                   = K,
+        seed                        = seed,
     )
 end
