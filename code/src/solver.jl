@@ -509,20 +509,8 @@ function solve_state(s_orig::State, V1::Dict{State,EV},
 end
 
 # ---------------------------------------------------------------------------
-# Convenience top-level solvers
+# Convenience top-level solver
 # ---------------------------------------------------------------------------
-function solve_2period(p::Params)
-    states = all_states(p.N_max)
-    V1 = compute_terminal_values(states, p)
-    pe_ccp_cache      = Dict{Tuple{State,Int}, Float64}()
-    ev_after_pe_cache = Dict{Tuple{State,Int}, EV}()
-    ccps = Dict{State, StateCCPs}()
-    for s in states
-        ccps[s] = solve_state(s, V1, pe_ccp_cache, ev_after_pe_cache, p)
-    end
-    return V1, ccps
-end
-
 function solve_initial(s0::State, p::Params)
     states = all_states(p.N_max)
     V1 = compute_terminal_values(states, p)

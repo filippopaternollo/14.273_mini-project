@@ -25,8 +25,8 @@ using DataFrames
 Draw each region's `(n_o, n_b, n_n, n_pe)` i.i.d. from `0..max_per_slot`,
 rejecting the draw if the market is empty or if the implied total firm
 count (active + potential entrants) exceeds `p.N_max`. The upper bound
-matches `all_states(p.N_max)`, which enumerates every state with
-`total_firms(s) ≤ N_max`, so the returned `s0` is guaranteed to live in
+matches `all_states(p.N_max)`, which enumerates every state with total
+firm count `≤ N_max`, so the returned `s0` is guaranteed to live in
 the enumerated state space.
 """
 function random_s0(rng::AbstractRNG, p::Params; max_per_slot::Int = 2)

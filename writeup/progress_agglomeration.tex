@@ -1,15 +1,27 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath, amssymb}
 \usepackage{booktabs}
+\usepackage{caption}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{geometry}
 \geometry{margin=1in}
+\setlength\parindent{0pt}
+
+% Setup for editing
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[status=draft,inline,index]{fixme}
+\fxsetup{theme=color,margin=false,mode=multiuser}
+\FXRegisterAuthor{fp}{fpa}{\color{blue}FP}
+
+% Math macros
+\newcommand\simiid{\stackrel{\tiny \operatorname{iid}}{\sim}}
+\newcommand{\indep}{\perp \!\!\! \perp}
 
 % ── Macros from estimation output ────────────────────────────────────────────
-\input{../output/estimates/2period_estimates.txt}
-\input{../output/estimates/regional_estimates.txt}
 \input{../output/estimates/estimation.txt}
+\input{../output/estimates/merger_estimates.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -18,12 +30,14 @@
 \begin{document}
 \maketitle
 
+\tableofcontents
+
 \section{Overview}
 
 This note documents the first extension of Igami (2017) to incorporate
 \textbf{innovation spillovers / agglomeration effects} in a simplified 2-period
-setting. The goal is to understand whether the presence of other innovative firms
-raises or lowers the incentive to adopt new technology.
+setting. The goal is to understand whether these effects undo the innovator's
+dilemma found by Igami.
 
 \section{Model}
 
@@ -36,39 +50,41 @@ The market state at each period $t$ is $s_t = (n_o, n_b, n_n, n_{pe})$, where:
   \item $n_n$: new entrants (using new technology),
   \item $n_{pe}$: potential entrants.
 \end{itemize}
-Active firms in the product market are those with $n_o + n_b + n_n > 0$.
-``Both'' firms are multi-product: they continue to sell old-gen (at cost $c_o$)
-while also selling new-gen (at cost $c_{n,t}$). This is the source of the
-\textbf{cannibalization effect}: by expanding new-gen supply, a ``both'' firm
-depresses the old-gen price it receives, creating a disincentive to innovate that
-is absent for pure new entrants.
+Active firms in the product market are those with $n_o + n_b + n_n > 0$.\\
+
+``Both'' firms are multi-product: they continue to sell old-gen (at cost
+$c_o$) while also selling new-gen (at cost $c_{n,t}$). This is the source of
+the \textbf{cannibalization effect}: by expanding new-gen supply, a ``both''
+firm depresses the old-gen price it receives, creating a disincentive to
+innovate that is absent for pure new entrants.
 
 \subsection{Timing Within Each Period}
 
 \begin{enumerate}
-  \item \textbf{Product market:} Cournot competition in \emph{two differentiated
-        markets} (old-generation and new-generation products) with linear inverse
-        demand:
+  \item \textbf{Product market:} Cournot competition in \emph{two
+        differentiated markets} (old-generation and new-generation products)
+        with linear inverse demand:
         \begin{align}
           P_o &= A - \frac{B}{M}\,Q_o - \frac{\rho B}{M}\,Q_n, \label{eq:demand_o}\\
           P_n &= A - \frac{B}{M}\,Q_n - \frac{\rho B}{M}\,Q_o, \label{eq:demand_n}
         \end{align}
         where $\rho \in [0,1)$ is the cross-market substitution parameter.
         Old firms ($n_o$) compete only in the old-gen market at cost $c_o$.
-        New entrants ($n_n$) compete only in the new-gen market at cost $c_{n,t}$.
-        ``Both'' firms ($n_b$) are \emph{multi-product}: they sell in both markets
-        simultaneously and internalize the \textbf{cannibalization} effect --- their
-        new-gen output reduces demand for their own old-gen product.
+        New entrants ($n_n$) compete only in the new-gen market at cost
+        $c_{n,t}$. ``Both'' firms ($n_b$) are \emph{multi-product}: they sell
+        in both markets simultaneously and internalize the
+        \textbf{cannibalization} effect, in that their new-gen output reduces
+        demand for their own old-gen product.
   \item \textbf{Private shocks:} Each firm draws i.i.d.\ cost shocks
-        $\varepsilon_{i,a} \sim \mathrm{Gumbel}(0, \sigma)$ for each action $a$.
+        $\varepsilon_{i,a} \sim \mathrm{EVT1}(0, \sigma)$ for each action $a$.
   \item \textbf{Discrete choices} (sequential order: old $\to$ both $\to$ new $\to$ pe):
         \begin{itemize}
           \item old: $\{\text{stay}, \text{innovate}, \text{exit}\}$
           \item both/new: $\{\text{stay}, \text{exit}\}$
           \item pe: $\{\text{enter}, \text{quit}\}$
         \end{itemize}
-        Each type observes the \emph{realized} outcomes of all earlier movers before
-        making its own decision.
+        Each type observes the \emph{realized} outcomes of all earlier movers
+        before making its own decision.
   \item \textbf{Transition} to period $t+1$.
 \end{enumerate}
 
@@ -80,34 +96,34 @@ The new-technology marginal cost depends on the number of firms already using it
   \label{eq:agglom}
 \end{equation}
 When $\gamma = 0$ the model reduces to the Igami baseline. When $\gamma > 0$,
-a larger innovative cluster lowers costs for all new-tech firms (knowledge
-spillover / agglomeration effect).
+a larger innovative cluster lowers costs for all new-tech firms, capturing
+the knowledge-spillover or agglomeration channel.
 
 \subsection{Value Functions and CCPs}
 
-Because firms move sequentially within each period and each type observes the
-\emph{realized} outcomes of all earlier movers, each type's decision problem is a
-genuine \textbf{single-agent problem}: earlier-mover uncertainty has been resolved,
-and later-mover choices enter only through pre-computed CCPs.
-Combined with i.i.d.\ EVT1 private cost shocks, this yields closed-form logit CCPs
-at each stage:
+Because firms move sequentially within each period and each type observes
+the \emph{realized} outcomes of all earlier movers, each type's decision
+problem is effectively a \textit{single-agent problem}: earlier-mover
+uncertainty has been resolved, and later-mover choices enter only through
+pre-computed CCPs. Combined with i.i.d.\ EVT1 private cost shocks, this
+yields closed-form logit CCPs at each stage:
 \begin{equation}
   P(a \mid \tau, \tilde{s}) = \frac{\exp\!\bigl(\bar{V}_{a}(\tau,\tilde{s})/\sigma\bigr)}
                            {\sum_{a'} \exp\!\bigl(\bar{V}_{a'}(\tau,\tilde{s})/\sigma\bigr)},
 \end{equation}
-where $\tilde{s}$ is the \emph{realized intermediate state} after all earlier
-movers have acted, and $\bar{V}_a$ is the systematic utility:
+where $\tilde{s}$ is the \emph{realized intermediate state} after all
+earlier movers have acted, and $\bar{V}_a$ is the systematic utility:
 \begin{equation}
   \bar{V}_a(\tau, \tilde{s}) = \pi_\tau(s_0) + \text{cost}(a) + \beta \,
   \mathbb{E}\!\left[ V_{t+1}(\tau', s') \mid \tilde{s},\, a_i = a,\, \mathrm{CCP}_{\text{later}} \right].
 \end{equation}
-Here $\mathrm{CCP}_{\text{later}}$ denotes pre-computed CCPs of same-type peers and
-all later-moving types; flow profits $\pi_\tau(s_0)$ are evaluated at the
-period-opening state.
+Here $\mathrm{CCP}_{\text{later}}$ denotes pre-computed CCPs of same-type
+peers and all later-moving types; flow profits $\pi_\tau(s_0)$ are evaluated
+at the period-opening state.
 
 \subsection{Solution Method}
 
-The model is solved by \textbf{one-pass backward induction}, following Igami (2017):
+The model is solved by backward induction, following Igami (2017):
 \begin{enumerate}
   \item \textbf{Terminal period ($t=1$):} $V_1(\tau, s_1) = \pi_\tau(s_1)$,
         where Cournot profits use the agglomeration-adjusted cost
@@ -116,36 +132,37 @@ The model is solved by \textbf{one-pass backward induction}, following Igami (20
         \emph{reverse move order} (PE $\to$ new $\to$ both $\to$ old),
         exploiting the sequential structure:
         \begin{itemize}
-          \item \textbf{Stage 4 (PE):} Each PE firm observes the full realized
-                intermediate state $\tilde{s}$ and solves a binary logit
-                $\{\text{enter}, \text{quit}\}$. CCPs are pre-computed for all
-                intermediate states reachable from $s_0$.
+          \item \textbf{Stage 4 (PE):} Each PE firm observes the full
+                realized intermediate state $\tilde{s}$ and solves a binary
+                logit $\{\text{enter}, \text{quit}\}$. We compute CCPs for
+                all intermediate states reachable from $s_0$.
           \item \textbf{Stage 3 (new):} Each new firm solves a binary logit
-                $\{\text{stay}, \text{exit}\}$, conditioning on pre-computed PE CCPs
-                to integrate over the PE-stage continuation value.
-          \item \textbf{Stage 2 (both):} Each both firm solves a binary logit,
-                conditioning on new + PE CCPs. Innovators locked in from Stage 1
-                ($k_{io}$ old firms that chose innovate) are added to $n_b$
-                before this stage.
-          \item \textbf{Stage 1 (old):} Each old firm solves a multinomial logit
-                $\{\text{stay}, \text{innovate}, \text{exit}\}$, conditioning on
-                all lower-stage CCPs.
+                $\{\text{stay}, \text{exit}\}$, conditioning on pre-computed
+                PE CCPs to integrate over the PE-stage continuation value.
+          \item \textbf{Stage 2 (both):} Each both firm solves a binary
+                logit, conditioning on new + PE CCPs. Innovators locked in
+                from Stage 1 ($k_{io}$ old firms that chose innovate) are
+                added to $n_b$ before this stage.
+          \item \textbf{Stage 1 (old):} Each old firm solves a multinomial
+                logit $\{\text{stay}, \text{innovate}, \text{exit}\}$,
+                conditioning on all lower-stage CCPs.
         \end{itemize}
         No fixed-point iteration is needed within the period: the sequential
         structure makes each stage a closed-form single-agent problem given
-        pre-computed downstream CCPs. Marginal CCPs for later-moving types are
-        recovered by integrating over the equilibrium transition distribution
-        (products of independent Binomial/Multinomial draws).
+        pre-computed downstream CCPs. Marginal CCPs for later-moving types
+        are recovered by integrating over the equilibrium transition
+        distribution (products of independent Binomial / Multinomial draws).
 \end{enumerate}
 
 \section{Calibration}
 
-The calibration is illustrative (not estimated from data) and is summarised in
-Table~\ref{tab:params}.
+We summarize the parameters we use for calibration and for simulating the
+data in Table~\ref{tab:params}.\\
 
-\begin{table}[h]
+\begin{table}[ht]
   \centering
-  \caption{Illustrative calibration}
+  \caption{Parameter values for calibration and simulation}
+  \medskip
   \label{tab:params}
   \begin{tabular}{clc}
     \toprule
@@ -159,127 +176,44 @@ Table~\ref{tab:params}.
     $\beta$   & Discount factor               & 0.9  \\
     $\kappa$  & Innovation cost               & 0.3  \\
     $\phi$    & Entry cost                    & 0.2  \\
-    $\sigma$  & EVT1 scale                    & 1.0  \\
-    $\gamma$  & Agglomeration (comparative statics) & varied \\
+    $\sigma$  & EVT1 scale                    & 0.5  \\
+    $\gamma$  & Agglomeration (default)       & 0.15 \\
     $\rho$    & Cross-market substitution     & 0.5  \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The initial state of interest is $s_0 = (n_o, n_b, n_n, n_{pe}) = (4,1,1,2)$,
-loosely inspired by the early HDD market structure in Igami (2017).
-
-\section{Results}
-
-\subsection{Baseline vs.\ Agglomeration}
-
-Table~\ref{tab:baseline_vs_agglom} compares equilibrium CCPs at $s_0$ for
-$\gamma = 0$ (baseline) and $\gamma = \gammaAgglom$.
-
-\begin{table}[h]
-  \centering
-  \caption{CCPs at $s_0 = (4,1,1,2)$: baseline vs.\ agglomeration ($\gamma = \gammaAgglom$)}
-  \label{tab:baseline_vs_agglom}
-  \begin{tabular}{lcc}
-    \toprule
-     & $\gamma = 0$ & $\gamma = \gammaAgglom$ \\
-    \midrule
-    $P(\text{innovate} \mid \text{old})$ & \pInnovatBaseline & \pInnovatAgglom \\
-    $P(\text{enter}    \mid \text{pe})$  & \pEnterBaseline   & \pEnterAgglom   \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-Agglomeration raises both the innovation and entry rates. Intuitively, a larger
-innovative cluster lowers future costs for new-tech firms, increasing the expected
-continuation value of innovating or entering.
-
-\subsection{Comparative Statics in $\gamma$}
-
-Table~\ref{tab:compstats} reports equilibrium CCPs as $\gamma$ varies from 0 to
-0.30, and Figure~\ref{fig:compstats} plots the same.
-
-\begin{table}[h]
-  \centering
-  \caption{CCPs vs.\ agglomeration parameter $\gamma$}
-  \label{tab:compstats}
-  \input{../output/tables/comp_stats_agglomeration.tex}
-\end{table}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.7\textwidth]{../output/figures/comp_stats_agglomeration.pdf}
-  \caption{$P(\text{innovate}\mid\text{old})$ and $P(\text{enter}\mid\text{pe})$
-           as functions of $\gamma$ at $s_0 = (4,1,1,2)$.}
-  \label{fig:compstats}
-\end{figure}
-
-\subsection{Comparative Statics in $\rho$ (Cannibalization)}
-
-Figure~\ref{fig:cannibalization} plots equilibrium CCPs as the substitution
-parameter $\rho$ varies from 0 (independent markets) to 0.95 (near-homogeneous
-goods), holding $\gamma = 0.05$.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.7\textwidth]{../output/figures/comp_stats_cannibalization.pdf}
-  \caption{$P(\text{innovate}\mid\text{old})$ and $P(\text{enter}\mid\text{pe})$
-           as functions of $\rho$ at $s_0 = (4,1,1,2)$, $\gamma = 0.05$.}
-  \label{fig:cannibalization}
-\end{figure}
-
-\subsection{Discussion}
-
-Three features of the comparative statics are notable:
-\begin{enumerate}
-  \item \textbf{Positive agglomeration effect:} Higher $\gamma$ unambiguously
-        raises the innovation rate for small values of $\gamma$. This confirms
-        the model's central prediction: knowledge spillovers encourage adoption.
-  \item \textbf{Cannibalization deters innovation:} Higher $\rho$ (stronger
-        substitution between old-gen and new-gen) reduces the profit of ``both''
-        firms by depressing old-gen prices. In the calibration, per-firm ``both''
-        profit falls from $\approx 0.531$ at $\rho=0$ to $\approx 0.327$ at
-        $\rho=0.5$. This is the central mechanism in Igami (2017): incumbents are
-        reluctant to innovate because doing so cannibalizes their existing
-        old-gen revenue.
-  \item \textbf{Saturation:} The innovation rate saturates near $1/3$ for large
-        $\gamma$. This is a feature of the EVT1 / logit structure: with large
-        $\sigma$ relative to payoff differences, all actions approach equal
-        probability. In a richer calibration (smaller $\sigma$), the effect would
-        be more pronounced.
-\end{enumerate}
-
-\section{Regional Extension and Counterfactuals}
+\section{Regional Extension}
 
 \subsection{Regional Structure}
 
-To study the interaction between industrial policy and agglomeration we extend
-the state space with a \textbf{region} attribute. There are $R = 3$ regions
-(labelled $r \in \{1,2,3\}$); each firm is born into a region and never leaves
-it, and potential entrants sit in per-region pools $n_{pe,r}$. Product-market
-competition remains \textbf{global} --- all active firms meet in the same
-two-market Cournot game of
-equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} --- but agglomeration
-spillovers are now \textbf{local}:
+To study the interaction between industrial policy and agglomeration we
+extend the state space with a \textbf{region} attribute. There are $R = 3$
+regions (labelled $r \in \{1,2,3\}$); each firm is born into a region and
+never leaves it, and potential entrants sit in per-region pools $n_{pe,r}$.
+Product-market competition stays \textbf{global}, with all active firms
+meeting in the same two-market Cournot game of
+equations~\eqref{eq:demand_o}--\eqref{eq:demand_n}. Agglomeration spillovers,
+in contrast, are now \textbf{local}:
 \begin{equation}
   c_{n,r,t} = c_{n,0} - \gamma_r \cdot \bigl(n_{b,r,t} + n_{n,r,t}\bigr),
   \qquad r = 1,\dots,R.
   \label{eq:local_agglom}
 \end{equation}
-Because $c_{n,r,t}$ varies across regions, firms of type ``both'' and ``new''
-face \emph{heterogeneous} marginal costs in the new-gen market. The Cournot
-stage therefore loses symmetry across regions, and equilibrium quantities are
-obtained by solving an asymmetric FOC system of up to $4R$ equations per
-state. Within-region slots remain symmetric (all firms in the same
-$(type, r)$ cell pick the same quantity), so per-firm profits are still
+Because $c_{n,r,t}$ varies across regions, firms of type ``both'' and
+``new'' face \emph{heterogeneous} marginal costs in the new-gen market. The
+Cournot stage therefore loses symmetry across regions, and equilibrium
+quantities are obtained by solving an asymmetric FOC system of up to $4R$
+equations per state. Within-region slots remain symmetric (all firms in the
+same $(type, r)$ cell pick the same quantity), so per-firm profits are still
 characterised by $\pi_{o,r} = b q_{oo,r}^2$, $\pi_{n,r} = b q_{nn,r}^2$, and
 $\pi_{b,r} = b(q_{bo,r}^2 + q_{bn,r}^2) + 2 s\, q_{bo,r} q_{bn,r}$ where
-$b = B/M$ and $s = \rho B/M$.
+$b = B/M$ and $s = \rho B/M$.\\
 
 Each firm privately captures the lower cost when it innovates but does not
-internalize the benefit it confers on regional peers --- a standard
-\textbf{local agglomeration externality} that creates a wedge between the
-social and private return to innovation and opens the door to regionally
+internalize the benefit it confers on regional peers. This is a standard
+\textbf{local agglomeration externality}, creating a wedge between the
+social and private return to innovation and opening the door to regionally
 targeted industrial policy.
 
 \subsection{Solution with Regional States}
@@ -293,159 +227,62 @@ $r+1,\dots,R$. This is the regional analogue of Igami's cross-type
 sequencing: it makes every sub-stage a single-agent problem whose CCP is a
 \emph{scalar} fixed point rather than a joint fixed point across regions,
 and it removes any coupling in the solver between regions at the same
-stage.
+stage.\\
 
-Concretely, we solve each stage in reverse region order. Region~$R$'s
-scalar FP is computed first for every reachable sub-state, and cached.
-Region~$R-1$'s FP is then computed given the cached region-$R$ continuation,
-and so on down to region~$1$. Across stages, the usual layered caches still
-apply: stage-4 (PE) depends only on the post-new-stage state and is reused
-across initial states via
-$\mathrm{EV}_{\mathrm{after\,pe}}[s_{an}, r]$; stages~3, 2, 1 cascade through
-$\mathrm{EV}_{\mathrm{after\,new}}$, $\mathrm{EV}_{\mathrm{after\,both}}$,
-and $\mathrm{EV}_{\mathrm{after\,old}}$, each keyed by
-$(\text{State}, r)$. Because each sub-state's CCP is a function of the
-realized history, the per-region CCPs reported in the results below are
-\emph{marginalised} over the equilibrium play of earlier-moving regions,
-computed by a forward traversal of the sub-stage tree.
+Concretely, we solve each stage in reverse region order. Region~$R$'s scalar
+FP is computed first for every reachable sub-state, and cached. Region~$R-1$'s
+FP is then computed given the cached region-$R$ continuation, and so on
+down to region~$1$. Across stages, the usual layered caches still apply:
+stage-4 (PE) depends only on the post-new-stage state and is reused across
+initial states via $\mathrm{EV}_{\mathrm{after\,pe}}[s_{an}, r]$; stages~3,
+2, 1 cascade through $\mathrm{EV}_{\mathrm{after\,new}}$,
+$\mathrm{EV}_{\mathrm{after\,both}}$, and $\mathrm{EV}_{\mathrm{after\,old}}$,
+each keyed by $(\text{State}, r)$. Because each sub-state's CCP is a function
+of the realized history, the per-region CCPs reported in the results below
+are \emph{marginalised} over the equilibrium play of earlier-moving regions,
+computed by a forward traversal of the sub-stage tree.\\
 
 Because the state space now has $4R = 12$ integer coordinates, we cap
 $N_{\max} = 6$ on this branch (about $1.8\times 10^4$ enumerated states) and
 pick initial states with total firm count $\le 6$. One visible artefact of
-the sequential-move convention is a small first-mover asymmetry in the
-baseline: with uniform $\gamma_r = 0.05$ the reported innovation CCPs are
-$(0.3333, 0.3330, 0.3326)$ rather than the exactly-symmetric values one
-would get under simultaneous moves within a stage. Region~1 commits without
-observing anyone, while region~3 best-responds to the realised history; the
-gap is $\le 10^{-3}$ in all experiments and does not affect any of the
-counterfactual comparisons.
-
-\subsection{Baseline and Counterfactuals}
-
-We solve the regional model at two initial states, both with total firm
-count 6:
-\begin{itemize}
-  \item \textbf{Symmetric $s_0$:} $s_0^{\mathrm{sym}} =
-        \bigl((1,1,1), (1,1,1), (0,0,0), (0,0,0)\bigr)$ --- one old incumbent
-        and one ``both'' incumbent in each region, no entrants.
-  \item \textbf{Clustered $s_0$:} $s_0^{\mathrm{clust}} =
-        \bigl((1,1,1), (3,0,0), (0,0,0), (0,0,0)\bigr)$ --- same number of
-        firms of each type, but all three ``both'' incumbents are
-        concentrated in region~1.
-\end{itemize}
-
-Starting from $s_0^{\mathrm{sym}}$ with uniform $\gamma_r = 0.05$ we verify a
-\textbf{symmetry check}: the three regions' CCPs are nearly identical, with
-only tiny differences (on the order of $10^{-3}$) that reflect the
-sequential region-move structure discussed above rather than any substantive
-break in the model's permutation symmetry when the state and parameters are
-symmetric.
-
-Two counterfactuals are then run against this baseline.
-\textbf{Counterfactual~A} subsidises innovation in region~1 by tripling its
-agglomeration strength to $\gamma_1 = \gammaSubsidyOne$ while leaving
-$\gamma_2 = \gamma_3 = \gammaOther$. \textbf{Counterfactual~B} holds
-$\gamma_r$ uniform but starts from the clustered initial state
-$s_0^{\mathrm{clust}}$, asking whether a historical concentration of
-innovators is enough to lock in innovation leadership even without a policy
-tilt.
-
-\begin{table}[h]
-  \centering
-  \caption{Regional innovation CCPs $P(\text{innovate}\mid\text{old}, r)$
-           at each scenario.  Baseline uses $s_0^{\mathrm{sym}}$ with
-           uniform $\gamma = \gammaOther$; CF-A sets
-           $\gamma_1 = \gammaSubsidyOne$; CF-B uses $s_0^{\mathrm{clust}}$.}
-  \label{tab:regional_counterfactuals}
-  \input{../output/tables/regional_comp_stats.tex}
-\end{table}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/regional_subsidy.pdf}
-  \caption{Regional innovation rates as $\gamma_1$ varies while
-           $\gamma_2 = \gamma_3 = \gammaOther$ is held fixed.  Region~1
-           responds positively to its own subsidy; regions~2 and~3 are
-           slightly depressed through the global Cournot channel.}
-  \label{fig:regional_subsidy}
-\end{figure}
-
-\subsection{Discussion}
-
-Three findings stand out in Table~\ref{tab:regional_counterfactuals} and
-Figure~\ref{fig:regional_subsidy}:
-
-\begin{enumerate}
-  \item \textbf{Targeted subsidies work, but leak.} Raising $\gamma_1$ from
-        \gammaOther\ to \gammaSubsidyOne\ moves region~1's innovation
-        probability from \pInnovBaselineROne\ to \pInnovSubsidyROne, a
-        \pInnovBaselineROne-to-\pInnovSubsidyROne\ gain of roughly two and
-        a half percentage points. Regions~2 and~3 fall from
-        \pInnovBaselineRTwo\ to \pInnovSubsidyRTwo --- a small but clearly
-        negative spillover driven entirely by the \emph{global} product
-        market: more innovation in region~1 lowers expected new-gen prices
-        everywhere, eroding the option value of innovating in the other
-        regions.
-  \item \textbf{Historical clusters alone are weak.} Starting from
-        $s_0^{\mathrm{clust}}$ the incumbent cluster in region~1 barely
-        moves innovation there
-        ($\pInnovClusterROne$ vs.\ $\pInnovBaselineROne$ in the symmetric
-        baseline): with only one remaining old firm in region~1, the
-        region's marginal old firm is already close to saturating its own
-        local spillover. The larger effect shows up in regions~2 and~3,
-        whose CCPs fall to $\pInnovClusterRTwo$ because of the global-market
-        pressure from the concentrated region-1 innovators. A one-shot
-        historical endowment is therefore a much weaker policy lever than a
-        continuing subsidy.
-  \item \textbf{The spillover wedge is still local.} Comparing CF-A and
-        CF-B makes clear that what drives region~1's innovation is not how
-        many innovators are in the region today but the
-        \emph{marginal reduction in new-tech cost} each additional
-        innovator delivers. The policy CF-A tilts that reduction directly,
-        which is why it dominates a pure history-based CF-B at the same
-        total cluster size.
-\end{enumerate}
-
-The two experiments illustrate how the regional model bridges Igami's
-replacement-effect story with the industrial-policy literature: even a
-modest, regionally targeted spillover subsidy reshapes the geographic
-distribution of innovation at the cost of a small drag on the rest of the
-world, with magnitudes that depend on the level of cannibalization $\rho$
-and the strength of the local externality $\gamma_r$.
+the sequential-move convention is a small first-mover asymmetry: at any
+symmetric $s_0$ with uniform $\gamma_r$, the three regions' CCPs differ by
+at most $10^{-3}$. Region~1 commits without observing anyone, while
+region~3 best-responds to the realised history. The gap is well below the
+magnitude of every counterfactual difference reported in
+Section~\ref{sec:merger}.
 
 \section{Estimation on Simulated Data}
+\label{sec:estimation}
 
-As a first pass at recovering the model's structural parameters from
-data, we simulate a firm-level dataset from the regional model under
-the calibration of Table~\ref{tab:params} and then estimate
-$(\gamma, \kappa, \phi)$, treating the demand parameters, the EVT1
-scale $\sigma$, the cost $c_{n,0}$, and the state cap $N_{\max}$ as
-known.
+As a first pass at recovering the model's structural parameters from data,
+we simulate a firm-level dataset from the regional model under the
+calibration of Table~\ref{tab:params} and then estimate
+$(\gamma, \kappa, \phi)$, treating the demand parameters, the EVT1 scale
+$\sigma$, the cost $c_{n,0}$, and the state cap $N_{\max}$ as known.
 
 \subsection{Simulated dataset}
 
-The simulator (\texttt{code/scripts/simulate\_data.jl}) draws
-\NumMarkets\ independent markets from the 2-period regional model.
-Each market gets its own initial state
-$s_0 \sim \mathrm{unif}\{0,1,2\}^{4R}$ (rejecting empty or over-capacity
-draws), so the panel covers a range of local cluster sizes. For every
-firm in every period we record region, firm type, the two Cournot
-quantities, realised profit, and---for period~1 only---the discrete
-action. The structural parameters used to draw the data are
+The simulator (\texttt{code/scripts/simulate\_data.jl}) draws \NumMarkets\
+independent markets from the 2-period regional model. Each market gets its
+own initial state $s_0 \sim \mathrm{unif}\{0,1,2\}^{4R}$ (rejecting empty or
+over-capacity draws), so the panel covers a range of local cluster sizes.
+For every firm in every period we record region, firm type, the two Cournot
+quantities, and realised profit. For period~1 we additionally record the
+discrete action. The structural parameters used to draw the data are
 deliberately \emph{not} stored in the CSV.
 
 \subsection{Two-step estimator}
 
-Because equilibrium quantities are a deterministic function of the
-state and the spillover vector $\gamma$, identification splits
-cleanly: $\gamma$ is pinned by the Cournot block and $(\kappa, \phi)$
-by the discrete actions, conditional on $\gamma$. We exploit this with
-a two-step estimator (see \texttt{notes/estimation.md} for the full
-writeup).
+Because equilibrium quantities are a deterministic function of the state
+and the spillover vector $\gamma$, identification splits cleanly: $\gamma$
+is pinned by the Cournot block and $(\kappa, \phi)$ by the discrete
+actions, conditional on $\gamma$. We exploit this with a two-step estimator
+(see \texttt{notes/estimation.md} for the full writeup).
 
-\paragraph{Step 1 --- NLS for $\gamma$.} For each market we
-reconstruct $s_0$ and $s_1$ by counting firms of each type and region
-in the corresponding period. We then solve
+\paragraph{Step 1: NLS for $\gamma$.}
+For each market we reconstruct $s_0$ and $s_1$ by counting firms of each
+type and region in the corresponding period. We then solve
 \begin{equation}
   \widehat{\gamma} \;=\; \arg\min_{\gamma}\;
   \sum_{m,t,r,\,\mathrm{slot}}
@@ -454,19 +291,18 @@ in the corresponding period. We then solve
   \label{eq:nls_gamma}
 \end{equation}
 starting from $\gamma^0 = (0,0,0)$ and leaving $\gamma$
-\emph{unconstrained}. Because the simulated quantities are noiseless,
-the minimum is machine zero ($\text{SSR} = \NlsSsr$) and
-$\widehat{\gamma}$ equals the truth to all reported digits; this step
-doubles as a sanity check that state reconstruction is correct.
+\emph{unconstrained}. Because the simulated quantities are noiseless, the
+minimum is machine zero ($\text{SSR} = \NlsSsr$) and $\widehat{\gamma}$
+equals the truth to all reported digits; this step doubles as a sanity
+check that state reconstruction is correct.
 
-\paragraph{Step 2 --- MLE for $(\kappa, \phi)$.} Holding
-$\gamma = \widehat{\gamma}$ fixed, we maximise the period-1 action
-log-likelihood over $(\kappa, \phi)$. The likelihood \emph{replays}
-the sequential-move order used by the solver: within each stage,
-regions act in order $r = 1 \to 2 \to 3$, and each firm's contribution
-uses the stage CCP evaluated at the sub-state its firm actually faced
-(not the marginal CCP integrated over the forward traversal). Per
-market,
+\paragraph{Step 2: MLE for $(\kappa, \phi)$.}
+Holding $\gamma = \widehat{\gamma}$ fixed, we maximise the period-1 action
+log-likelihood over $(\kappa, \phi)$. The likelihood \emph{replays} the
+sequential-move order used by the solver: within each stage, regions act
+in order $r = 1 \to 2 \to 3$, and each firm's contribution uses the stage
+CCP evaluated at the sub-state its firm actually faced (not the marginal
+CCP integrated over the forward traversal). Per market,
 \begin{align}
   \ell_m(\kappa, \phi)
     &= \sum_{r=1}^{R}\Bigl[
@@ -488,56 +324,220 @@ market,
        \Bigr],
   \label{eq:loglik_m}
 \end{align}
-where the $k^{\bullet}_r$ are observed action counts in region $r$ and
-the $\tilde{s}^{\bullet}_r$ are the sub-states produced by sequentially
-updating $s_0$ with the realised outcomes of earlier regions and
-stages. The total objective is
-$\ell(\kappa, \phi) = \sum_m \ell_m(\kappa, \phi)$, maximised by
-Nelder--Mead starting from
-$(\kappa^0, \phi^0) = (1.0, 1.0)$ --- intentionally far from the
-calibration so the optimiser must traverse the parameter space.
-Standard errors come from the BHHH estimator
-$V = (\sum_m g_m g_m^\prime)^{-1}$ with central finite-difference
-gradients.
+where the $k^{\bullet}_r$ are observed action counts in region $r$ and the
+$\tilde{s}^{\bullet}_r$ are the sub-states produced by sequentially
+updating $s_0$ with the realised outcomes of earlier regions and stages.
+The total objective is $\ell(\kappa, \phi) = \sum_m \ell_m(\kappa, \phi)$,
+maximised by Nelder-Mead starting from $(\kappa^0, \phi^0) = (1.0, 1.0)$.
+The starting point is intentionally far from the calibration, so the
+optimiser must traverse the parameter space. Standard errors come from the
+BHHH estimator $V = (\sum_m g_m g_m^\prime)^{-1}$ with central
+finite-difference gradients.
 
 \subsection{Results}
 
 Table~\ref{tab:estimation} reports the estimates against the
 data-generating parameters. The two-step estimator recovers
-$\widehat{\gamma} = (\SpilloverOneHat, \SpilloverTwoHat,
-\SpilloverThreeHat)$ exactly (Step~1), and the action MLE delivers
-$\widehat{\kappa} = \InnovCostHat$
+$\widehat{\gamma} = (\SpilloverOneHat, \SpilloverTwoHat, \SpilloverThreeHat)$
+exactly (Step~1), and the action MLE delivers $\widehat{\kappa} = \InnovCostHat$
 ($\text{s.e.}\,\InnovCostSe$, truth~$\InnovCostTrue$) and
-$\widehat{\phi} = \EntryCostHat$
-($\text{s.e.}\,\EntryCostSe$, truth~$\EntryCostTrue$).
-Both $\kappa$ and $\phi$ lie within roughly one standard error of
-their true values; given $\NumMarkets$ markets and a handful of
-deciders per market, this is about the precision the sample supports.
-The period-1 action log-likelihood at the optimum is $\LogLikHat$.
+$\widehat{\phi} = \EntryCostHat$ ($\text{s.e.}\,\EntryCostSe$,
+truth~$\EntryCostTrue$). Both $\kappa$ and $\phi$ lie within roughly one
+standard error of their true values; given $\NumMarkets$ markets and a
+handful of deciders per market, this is about the precision the sample
+supports. The period-1 action log-likelihood at the optimum is $\LogLikHat$.\\
 
-\begin{table}[h]
+\begin{table}[ht]
   \centering
-  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$ on
-           \NumMarkets\ simulated markets. Step~1 identifies $\gamma$
-           from Cournot quantities; Step~2 estimates $(\kappa, \phi)$
-           by period-1 action MLE conditional on $\widehat{\gamma}$.
-           Standard errors (BHHH) are reported only for the MLE step.}
+  \caption{Two-step estimation of $(\gamma, \kappa, \phi)$}
+  \medskip
   \label{tab:estimation}
   \input{../output/tables/estimation.tex}
+  \caption*{\footnotesize Notes: Estimates from \NumMarkets\ simulated markets.
+    Step~1 identifies $\gamma$ from Cournot quantities; Step~2 estimates
+    $(\kappa, \phi)$ by period-1 action MLE conditional on $\widehat{\gamma}$.
+    Standard errors (BHHH) are reported only for the MLE step.}
 \end{table}
+
+\section{Counterfactual: EU--US Alliance}
+\label{sec:merger}
+
+Pooling regions~1 and~2's innovator counts lifts welfare by roughly
+$\MergerWelfPctROne\,\%$ in each allied region, leaves region~3 unchanged
+in welfare terms, and raises aggregate welfare by $\MergerWelfPctTotal\,\%$
+of baseline. Innovation rates rise by $\MergerInnovPctROne\,\%$ and
+$\MergerInnovPctRTwo\,\%$ in the allied regions and fall by
+$|\MergerInnovPctRThree|\,\%$ in region~3, so the unallied region is harmed
+on the real-economy margin even though it breaks even on welfare. The rest
+of the section sets up the spillover specification, derives the welfare
+formula, describes the Monte Carlo evaluation, and walks through the
+mechanism.
+
+\subsection{Spillover specification under the alliance}
+
+Under the baseline, region~$r$'s new-technology marginal cost depends only
+on its own innovators, equation~\eqref{eq:local_agglom}. Under the alliance
+of $\{1, 2\}$, regions~1 and~2 share an enlarged pool:
+\begin{equation}
+  c_{n,r,t}^{\mathrm{alliance}}
+    = \max\!\left\{0,\; c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
+      \bigl(n_{b,r',t} + n_{n,r',t}\bigr)\right\},
+  \qquad
+  \mathrm{bloc}(1) = \mathrm{bloc}(2) = \{1, 2\},\
+  \mathrm{bloc}(3) = \{3\}.
+  \label{eq:bloc_pool}
+\end{equation}
+The cost floor prevents the marginal cost from turning negative; under the
+calibration $\gamma \le 0.15$ this constraint never binds. The implementation
+adds a single \texttt{blocs} field to the parameter struct; the default
+\texttt{(1,2,3)} recovers equation~\eqref{eq:local_agglom} bit-for-bit.
+
+\subsection{Welfare}
+
+The two-market linear demand of
+equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} is rationalised by the
+quasi-linear utility $U = A(Q_o + Q_n) - \tfrac{b}{2}(Q_o^2 + Q_n^2) - s\,
+Q_o\, Q_n$ with $b = B/M$ and $s = \rho B/M$, giving consumer surplus
+\begin{equation}
+  \mathrm{CS}(s) = \tfrac{b}{2}(Q_o^2 + Q_n^2) + s\, Q_o\, Q_n.
+  \label{eq:cs}
+\end{equation}
+Because Cournot is global, $\mathrm{CS}$ is a single number; we allocate
+it equally across regions (equal-population assumption). Producer surplus
+is local: each firm's per-period profit is charged to its own region.
+Innovation and entry costs are paid by the firm's region in period~1.
+Two-period discounted welfare per region is
+\begin{equation}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\,\mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\,\mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+  \label{eq:welfare}
+\end{equation}
+which satisfies $\sum_r W_r = \mathrm{CS}_{\mathrm{total}} +
+\sum_r \mathrm{PS}_r - \sum_r (\kappa\, k^{\mathrm{innov}}_r +
+\phi\, k^{\mathrm{enter}}_r)$ by construction. The runner verifies this
+identity numerically and finds residuals at machine precision.
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \MergerNMarkets$ independent simulations per scenario.
+Each market draws its own initial state $s_0$ from the same distribution
+\texttt{simulate\_data.jl} uses, so the counterfactual sits on the same
+population the model was estimated on. The same seed (\MergerSeed) drives
+both scenarios, and per-market we use \texttt{MersenneTwister(seed + $k$)}.
+Identical $s_0$ draws and identical EVT1 shock paths under both scenarios
+mean each market contributes a paired observation
+$(W_r^{\mathrm{base}}, W_r^{\mathrm{alli}})$, so the variance of the
+welfare difference is much smaller than the variance of either level.
+Headline numbers stabilise to about $0.2$ percentage points by $K = 1000$.
+
+\subsection{Calibration and results}
+
+We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$, $c_{n,0}$,
+and $N_{\max}$ at the values of Table~\ref{tab:params}, and use the
+structural estimates from Section~\ref{sec:estimation}: $\widehat{\kappa} =
+\MergerKappaHat$, $\widehat{\phi} = \MergerPhiHat$, and uniform
+$\widehat{\gamma}_r = \MergerGammaHat$.\\
+
+Table~\ref{tab:merger} reports the full per-region decomposition.
+Innovation rises by $\MergerInnovPctROne\,\%$ in region~1 and
+$\MergerInnovPctRTwo\,\%$ in region~2, and falls by
+$|\MergerInnovPctRThree|\,\%$ in region~3. Entry rates move in the same
+direction with smaller magnitudes.\\
+
+\begin{table}[ht]
+  \centering
+  \caption{EU--US alliance: per-region equilibrium and welfare}
+  \medskip
+  \label{tab:merger}
+  \input{../output/tables/merger_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over $K = \MergerNMarkets$
+    independent markets, each drawing its own $s_0$ from the DGP used by
+    \texttt{simulate\_data.jl}; common random numbers across scenarios
+    (seed = \MergerSeed). Calibration: $\widehat{\kappa} = \MergerKappaHat$,
+    $\widehat{\phi} = \MergerPhiHat$, uniform
+    $\widehat{\gamma}_r = \MergerGammaHat$. Baseline blocs $(1,2,3)$;
+    alliance blocs $(1,1,2)$. CS allocated equally across the three
+    regions; PS$_r$ aggregates own-region firms' profits in both periods;
+    costs paid charges $\kappa\, k^{\mathrm{innov}}_r + \phi\,
+    k^{\mathrm{enter}}_r$ to region~$r$.}
+\end{table}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_innovation.pdf}
+  \caption{Innovation rate $P(\text{innov}\mid\text{old}, r)$ by region,
+           baseline vs.\ alliance.}
+  \label{fig:merger_innovation}
+\end{figure}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_welfare.pdf}
+  \caption{Per-region discounted welfare $W_r$ baseline vs.\ alliance. Both
+           allied regions gain visibly; region~3's bars are
+           indistinguishable.}
+  \label{fig:merger_welfare}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{Allied regions gain in two ways.} Their pooled innovator count
+lowers $c_{n,1}$ and $c_{n,2}$ whenever \emph{either} region has an
+innovator, raising the period-2 profit of being on new tech. This pulls
+more firms into innovation and entry there, which raises producer surplus,
+and the additional new-tech output also lowers prices globally, raising
+the regions' share of consumer surplus. Welfare rises by
+$\MergerWelfPctROne\,\%$ in region~1 and $\MergerWelfPctRTwo\,\%$ in
+region~2.\\
+
+\textbf{Region~3 loses on innovation but breaks even on welfare.} Tougher
+global Cournot competition from cheaper allied competitors drags region~3's
+$P(\mathrm{innov})$ and $P(\mathrm{enter})$ down by about $4\,\%$ and
+$3\,\%$ respectively, and its $\mathrm{PS}_3$ falls by roughly $7\,\%$.
+Its share of the global CS gain is almost the same magnitude in the
+opposite direction, so its net welfare moves by less than a basis point
+($\MergerWelfPctRThree\,\%$). The unallied region is harmed in real-economy
+terms (less innovation, lower profits) but the consumer-side benefit of
+cheaper goods produced by the alliance compensates almost exactly.\\
+
+\textbf{The aggregate gain is positive and sizeable.} Total welfare rises
+by $\MergerWelfPctTotal\,\%$ of baseline. Roughly half of the gain accrues
+to each allied region, with a near-zero residual from region~3. Knowledge
+integration is a positive-sum game even before factoring in the aggregate
+consumer benefits.\\
+
+The result depends on the calibration. Under an earlier
+$(\gamma, \sigma) = (0.05, 1.0)$ setting the same alliance moved welfare by
+under $1\,\%$ everywhere; tripling $\gamma$ scales the spillover delivered
+by the merger, and halving $\sigma$ doubles the logit slope $P(1-P)/\sigma$
+against any payoff change, so the combined effect on equilibrium quantities
+is roughly $6\times$. The recalibrated values stay well below the cost-floor
+saturation that sets in at $\gamma \gtrsim 0.30$, so the model is in its
+responsive interior. Full details, including the K-stability diagnostic and
+the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
+\texttt{notes/merger\_counterfactual.md}.
 
 \section{Next Steps}
 
 \begin{enumerate}
-  \item Replace the illustrative calibration with Igami's (2017) structural
-        estimates (Table 3 of the paper).
-  \item Extend to $T > 2$ periods (the HDD panel spans 1977--1999).
-  \item Richer counterfactuals on the regional branch: bilateral
-        spillover pools (e.g.\ regions 1--2 share an enlarged effective
-        $N^{\mathrm{inn}}$), endogenous region choice at entry, and a
-        welfare accounting that nets consumer surplus against the fiscal
-        cost of the subsidy.
-  \item Study welfare and industrial policy implications (e.g., R\&D subsidies).
+  \item \textbf{Heterogeneous absorptive capacity.} The alliance result
+        here uses uniform $\widehat{\gamma}_r$. Allowing $\gamma_r$ to
+        differ across regions, with the bloc-pooled spec of
+        equation~\eqref{eq:bloc_pool}, would let one region's higher
+        absorptive capacity amplify the alliance's effect.
+  \item \textbf{Fiscal cost of policy.} The current welfare accounting
+        prices in firms' own costs paid but does not net out the fiscal
+        cost of any subsidy a government would need to deliver to enlarge
+        $\gamma_r$ in a target region. Adding government revenue and cost
+        makes the targeted-subsidy and alliance scenarios directly
+        comparable as policy levers.
+  \item \textbf{$T > 2$ horizon.} A genuine multi-period extension would
+        force the value-function recursion to use the
+        $\sigma \log \sum \exp$ ex-ante form at every internal period.
+        The current 2-period setup avoids this because period~2 is
+        terminal.
 \end{enumerate}
 
 \end{document}
