@@ -100,7 +100,7 @@ println("\n=== Grid sweep over τ/κ̂ (CRN) ===")
         "τ/κ̂", "τ", "P_innov₁", "P_innov₂", "P_innov₃",
         "ΔW₁", "ΔW₂", "ΔW₃", "ΔΣW", "ΔΣW %")
 
-w_grid           = Vector{Any}(undef, length(SUBSIDY_GRID_FRAC))
+w_grid           = Vector{typeof(w_base)}(undef, length(SUBSIDY_GRID_FRAC))
 grid_innov_r1    = Float64[]; grid_innov_r2 = Float64[]; grid_innov_r3 = Float64[]
 grid_dW1         = Float64[]; grid_dW2 = Float64[]; grid_dW3 = Float64[]
 grid_dWtot       = Float64[]; grid_dWtot_pct = Float64[]
@@ -144,8 +144,15 @@ println("\n=== K-stability at τ/κ̂ = $(SUBSIDY_GRID_FRAC[i_max]) (CRN) ===")
 @printf("  %5s | %10s %10s %10s | %10s %10s %10s | %10s\n",
         "K", "ΔW₁", "ΔW₂", "ΔW₃", "ΔW₁ %", "ΔW₂ %", "ΔW₃ %", "ΔΣW %")
 for k_test in (500, 1000, 5000)
-    wb = expected_welfare_mc(p_base; n_markets = k_test, seed = SEED)
-    ws = expected_welfare_mc(p_max;  n_markets = k_test, seed = SEED)
+    if k_test == N_MARKETS
+        # Headline run already done above — reuse instead of paying for an
+        # identical Monte Carlo pass.
+        wb = w_base
+        ws = w_grid[i_max]
+    else
+        wb = expected_welfare_mc(p_base; n_markets = k_test, seed = SEED)
+        ws = expected_welfare_mc(p_max;  n_markets = k_test, seed = SEED)
+    end
     Δw = ntuple(r -> ws.welfare_by_region[r] - wb.welfare_by_region[r], R)
     pw = ntuple(r -> 100.0 * Δw[r] / wb.welfare_by_region[r], R)
     Δs = ws.total_welfare - wb.total_welfare

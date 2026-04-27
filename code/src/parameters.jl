@@ -35,7 +35,8 @@ end
 
 """
     default_params(; gamma = 0.15, sigma = 0.5, rho = 0.5, N_max = 6,
-                     blocs = (1, 2, 3), kappa = 0.3, phi = 0.2)
+                     blocs = (1, 2, 3), kappa = 0.3, phi = 0.2,
+                     subsidy = (0.0, 0.0, 0.0))
 
 Default plausible calibration.  `gamma` may be a scalar (applied to every
 region) or an `NTuple{3,Float64}` for region-specific values.  `N_max` defaults
@@ -43,7 +44,11 @@ to 6 on this branch because the regional state space has 4·R = 12 bins and
 blows up quickly.  `blocs` defaults to singleton pools; pass e.g. `(1, 1, 2)`
 to merge regions 1 and 2 into a single spillover pool.  `kappa`, `phi`, and
 `sigma` are exposed so counterfactual scripts can plug in estimated values
-without constructing a `Params` from scratch.
+without constructing a `Params` from scratch.  `subsidy` is the per-region
+innovation subsidy τ_r ≥ 0 (firms innovating in region `r` pay κ − τ_r
+out of pocket; the full κ remains the social resource cost).  It accepts a
+scalar (applied to every region) or an `NTuple{3,Float64}` for region-specific
+values, and defaults to no subsidy.
 
 The calibration `(γ, σ) = (0.15, 0.5)` is chosen to put innovation in the
 *responsive* region of the logit (γ below the c_n floor at γ ≳ 0.30, σ low

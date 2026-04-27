@@ -99,7 +99,16 @@ per-region sums (for PS), and counts of `innovate` / `enter` actions
 
   cs_p1, cs_p2                      Float64           CS in each period
   ps_by_region                      NTuple{R,Float64} period-1 + β·period-2 PS, per region
-  costs_by_region                   NTuple{R,Float64} κ·k_innov_r + φ·k_enter_r
+  costs_by_region                   NTuple{R,Float64} κ·k_innov_r + φ·k_enter_r (full social
+                                                      resource cost; subsidy does not enter)
+  subsidy_received_by_region        NTuple{R,Float64} τ_r·k_innov_r — firm-side receipts of the
+                                                      per-region innovation subsidy.  Under
+                                                      sovereign-funding accounting this is a
+                                                      transfer that cancels inside W_r and is
+                                                      reported for descriptive purposes only.
+  gov_outlay_total                  Float64           Σ_r subsidy_received_by_region — gross
+                                                      government outlay summed across regions
+                                                      (same units as costs_by_region).
   k_innov_by_region                 NTuple{R,Int}
   k_enter_by_region                 NTuple{R,Int}
   n_old_by_region, n_pe_by_region   NTuple{R,Int}     period-1 deciders (rate denominators)
@@ -190,6 +199,11 @@ Returns means across markets:
 
   cs_p1, cs_p2                                      Float64
   ps_by_region, costs_by_region, welfare_by_region  NTuple{R,Float64}
+  subsidy_received_by_region                        NTuple{R,Float64}   mean τ_r·k_innov_r
+                                                                        (firm-side receipts;
+                                                                        transfer, cancels in W_r)
+  gov_outlay_total                                  Float64             mean Σ_r τ_r·k_innov_r
+                                                                        (gross outlay per market)
   innov_rate_by_region                              NTuple{R,Float64}   pooled #innov / #old
   enter_rate_by_region                              NTuple{R,Float64}   pooled #enter / #pe
   total_welfare                                     Float64             Σ_r welfare_by_region
