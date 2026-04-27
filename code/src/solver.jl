@@ -293,9 +293,13 @@ function solve_old_region(s::State, r::Int, ctx::SolveContext,
     end
 
     p_s = 1/3; p_i = 1/3
+    # Region-r private innovation cost is κ minus any per-innovation subsidy.
+    # The full κ remains the social resource cost; the subsidy is a transfer
+    # accounted for in welfare.jl, not here.
+    kappa_priv = p.kappa - p.subsidy[r]
     for _ in 1:max_iter
         u_stay  = ctx.flow_o[r]
-        u_innov = ctx.flow_o[r] - p.kappa
+        u_innov = ctx.flow_o[r] - kappa_priv
         p_e = max(0.0, 1.0 - p_s - p_i)
 
         for k_so in 0:(n - 1), k_io in 0:(n - 1 - k_so)

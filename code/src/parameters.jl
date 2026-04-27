@@ -30,6 +30,7 @@ struct Params
     rho::Float64                    # cross-market substitution: S = rho*B; rho ∈ [0,1)
     N_max::Int                      # max total firms incl. potential entrants (bounds state space)
     blocs::NTuple{R,Int}            # spillover-pool ids; default (1,2,3) → singletons
+    subsidy::NTuple{R,Float64}      # per-region innovation subsidy τ_r ≥ 0; firm pays κ − τ_r
 end
 
 """
@@ -58,9 +59,12 @@ function default_params(; gamma = 0.15,
                           N_max::Int = 6,
                           blocs::NTuple{R,Int} = (1, 2, 3),
                           kappa::Float64 = 0.3,
-                          phi::Float64 = 0.2)
+                          phi::Float64 = 0.2,
+                          subsidy = (0.0, 0.0, 0.0))
     γ = gamma isa Number ? ntuple(_ -> Float64(gamma), R) :
                            NTuple{R,Float64}(gamma)
+    τ = subsidy isa Number ? ntuple(_ -> Float64(subsidy), R) :
+                             NTuple{R,Float64}(subsidy)
     return Params(
         3.0,    # A
         1.0,    # B
@@ -74,6 +78,7 @@ function default_params(; gamma = 0.15,
         γ,      # gamma per region
         rho,
         N_max,
-        blocs
+        blocs,
+        τ       # per-region innovation subsidy
     )
 end
