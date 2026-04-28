@@ -24,6 +24,7 @@
 \input{../output/estimates/merger_estimates.txt}
 \input{../output/estimates/subsidy_estimates.txt}
 \input{../output/estimates/entry_subsidy_estimates.txt}
+\input{../output/estimates/joint_subsidy_estimates.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -159,7 +160,12 @@ The model is solved by backward induction, following Igami (2017):
 \section{Calibration}
 
 We summarize the parameters we use for calibration and for simulating the
-data in Table~\ref{tab:params}.\\
+data in Table~\ref{tab:params}. We set $\kappa = \phi$ so that any
+remaining structural difference between incumbents and entrants in their
+period-1 adoption decision is driven by cannibalization alone: a
+``both''-type firm internalizes that adding new-gen output erodes its own
+old-gen profit, while a PE entrant has no legacy old-gen output to
+displace.\\
 
 \begin{table}[ht]
   \centering
@@ -177,7 +183,7 @@ data in Table~\ref{tab:params}.\\
     $c_{n,0}$ & New-tech baseline cost        & 0.5  \\
     $\beta$   & Discount factor               & 0.9  \\
     $\kappa$  & Innovation cost               & 0.3  \\
-    $\phi$    & Entry cost                    & 0.2  \\
+    $\phi$    & Entry cost                    & 0.3  \\
     $\sigma$  & EVT1 scale                    & 0.5  \\
     $\gamma$  & Agglomeration (default)       & 0.15 \\
     $\rho$    & Cross-market substitution     & 0.5  \\
@@ -360,166 +366,6 @@ supports. The period-1 action log-likelihood at the optimum is $\LogLikHat$.\\
     $(\kappa, \phi)$ by period-1 action MLE conditional on $\widehat{\gamma}$.
     Standard errors (BHHH) are reported only for the MLE step.}
 \end{table}
-
-\section{Counterfactual: EU--US Alliance}
-\label{sec:merger}
-
-Pooling regions~1 and~2's innovator counts lifts welfare by roughly
-$\MergerWelfPctROne\,\%$ in each allied region, leaves region~3 unchanged
-in welfare terms, and raises aggregate welfare by $\MergerWelfPctTotal\,\%$
-of baseline. Innovation rates rise by $\MergerInnovPctROne\,\%$ and
-$\MergerInnovPctRTwo\,\%$ in the allied regions and fall by
-$|\MergerInnovPctRThree|\,\%$ in region~3, so the unallied region is harmed
-on the real-economy margin even though it breaks even on welfare. The rest
-of the section sets up the spillover specification, derives the welfare
-formula, describes the Monte Carlo evaluation, and walks through the
-mechanism.
-
-\subsection{Spillover specification under the alliance}
-
-Under the baseline, region~$r$'s new-technology marginal cost depends only
-on its own innovators, equation~\eqref{eq:local_agglom}. Under the alliance
-of $\{1, 2\}$, regions~1 and~2 share an enlarged pool:
-\begin{equation}
-  c_{n,r,t}^{\mathrm{alliance}}
-    = \max\!\left\{0,\; c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
-      \bigl(n_{b,r',t} + n_{n,r',t}\bigr)\right\},
-  \qquad
-  \mathrm{bloc}(1) = \mathrm{bloc}(2) = \{1, 2\},\
-  \mathrm{bloc}(3) = \{3\}.
-  \label{eq:bloc_pool}
-\end{equation}
-The cost floor prevents the marginal cost from turning negative; under the
-calibration $\gamma \le 0.15$ this constraint never binds. The implementation
-adds a single \texttt{blocs} field to the parameter struct; the default
-\texttt{(1,2,3)} recovers equation~\eqref{eq:local_agglom} bit-for-bit.
-
-\subsection{Welfare}
-
-The two-market linear demand of
-equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} is rationalised by the
-quasi-linear utility $U = A(Q_o + Q_n) - \tfrac{b}{2}(Q_o^2 + Q_n^2) - s\,
-Q_o\, Q_n$ with $b = B/M$ and $s = \rho B/M$, giving consumer surplus
-\begin{equation}
-  \mathrm{CS}(s) = \tfrac{b}{2}(Q_o^2 + Q_n^2) + s\, Q_o\, Q_n.
-  \label{eq:cs}
-\end{equation}
-Because Cournot is global, $\mathrm{CS}$ is a single number; we allocate
-it equally across regions (equal-population assumption). Producer surplus
-is local: each firm's per-period profit is charged to its own region.
-Innovation and entry costs are paid by the firm's region in period~1.
-Two-period discounted welfare per region is
-\begin{equation}
-  W_r
-    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\,\mathrm{CS}(s_1)\bigr]
-    + \mathrm{PS}_r(s_0) + \beta\,\mathrm{PS}_r(s_1)
-    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
-  \label{eq:welfare}
-\end{equation}
-which satisfies $\sum_r W_r = \mathrm{CS}_{\mathrm{total}} +
-\sum_r \mathrm{PS}_r - \sum_r (\kappa\, k^{\mathrm{innov}}_r +
-\phi\, k^{\mathrm{enter}}_r)$ by construction. The runner verifies this
-identity numerically and finds residuals at machine precision.
-
-\subsection{Evaluation by Monte Carlo with common random numbers}
-
-We average $K = \MergerNMarkets$ independent simulations per scenario.
-Each market draws its own initial state $s_0$ from the same distribution
-\texttt{simulate\_data.jl} uses, so the counterfactual sits on the same
-population the model was estimated on. The same seed (\MergerSeed) drives
-both scenarios, and per-market we use \texttt{MersenneTwister(seed + $k$)}.
-Identical $s_0$ draws and identical EVT1 shock paths under both scenarios
-mean each market contributes a paired observation
-$(W_r^{\mathrm{base}}, W_r^{\mathrm{alli}})$, so the variance of the
-welfare difference is much smaller than the variance of either level.
-Headline numbers stabilise to about $0.2$ percentage points by $K = 1000$.
-
-\subsection{Calibration and results}
-
-We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$, $c_{n,0}$,
-and $N_{\max}$ at the values of Table~\ref{tab:params}, and use the
-structural estimates from Section~\ref{sec:estimation}: $\widehat{\kappa} =
-\MergerKappaHat$, $\widehat{\phi} = \MergerPhiHat$, and uniform
-$\widehat{\gamma}_r = \MergerGammaHat$.\\
-
-Table~\ref{tab:merger} reports the full per-region decomposition.
-Innovation rises by $\MergerInnovPctROne\,\%$ in region~1 and
-$\MergerInnovPctRTwo\,\%$ in region~2, and falls by
-$|\MergerInnovPctRThree|\,\%$ in region~3. Entry rates move in the same
-direction with smaller magnitudes.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{EU--US alliance: per-region equilibrium and welfare}
-  \medskip
-  \label{tab:merger}
-  \input{../output/tables/merger_results.tex}
-  \caption*{\footnotesize Notes: Monte Carlo over $K = \MergerNMarkets$
-    independent markets, each drawing its own $s_0$ from the DGP used by
-    \texttt{simulate\_data.jl}; common random numbers across scenarios
-    (seed = \MergerSeed). Calibration: $\widehat{\kappa} = \MergerKappaHat$,
-    $\widehat{\phi} = \MergerPhiHat$, uniform
-    $\widehat{\gamma}_r = \MergerGammaHat$. Baseline blocs $(1,2,3)$;
-    alliance blocs $(1,1,2)$. CS allocated equally across the three
-    regions; PS$_r$ aggregates own-region firms' profits in both periods;
-    costs paid charges $\kappa\, k^{\mathrm{innov}}_r + \phi\,
-    k^{\mathrm{enter}}_r$ to region~$r$.}
-\end{table}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/merger_innovation.pdf}
-  \caption{Innovation rate $P(\text{innov}\mid\text{old}, r)$ by region,
-           baseline vs.\ alliance.}
-  \label{fig:merger_innovation}
-\end{figure}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/merger_welfare.pdf}
-  \caption{Per-region discounted welfare $W_r$ baseline vs.\ alliance. Both
-           allied regions gain visibly; region~3's bars are
-           indistinguishable.}
-  \label{fig:merger_welfare}
-\end{figure}
-
-\subsection{Discussion}
-
-Three points are worth highlighting.\\
-
-\textbf{Allied regions gain in two ways.} Their pooled innovator count
-lowers $c_{n,1}$ and $c_{n,2}$ whenever \emph{either} region has an
-innovator, raising the period-2 profit of being on new tech. This pulls
-more firms into innovation and entry there, which raises producer surplus,
-and the additional new-tech output also lowers prices globally, raising
-the regions' share of consumer surplus. Welfare rises by
-$\MergerWelfPctROne\,\%$ in region~1 and $\MergerWelfPctRTwo\,\%$ in
-region~2.\\
-
-\textbf{Region~3 loses on innovation but breaks even on welfare.} Tougher
-global Cournot competition from cheaper allied competitors drags region~3's
-$P(\mathrm{innov})$ and $P(\mathrm{enter})$ down by about $4\,\%$ and
-$3\,\%$ respectively, and its $\mathrm{PS}_3$ falls by roughly $7\,\%$.
-Its share of the global CS gain is almost the same magnitude in the
-opposite direction, so its net welfare moves by less than a basis point
-($\MergerWelfPctRThree\,\%$). The unallied region is harmed in real-economy
-terms (less innovation, lower profits) but the consumer-side benefit of
-cheaper goods produced by the alliance compensates almost exactly.\\
-
-\textbf{The aggregate gain is positive and sizeable.} Total welfare rises
-by $\MergerWelfPctTotal\,\%$ of baseline. Roughly half of the gain accrues
-to each allied region, with a near-zero residual from region~3. Knowledge
-integration is a positive-sum game even before factoring in the aggregate
-consumer benefits.\\
-
-The result depends on the calibration. Under an earlier
-$(\gamma, \sigma) = (0.05, 1.0)$ setting the same alliance moved welfare by
-under $1\,\%$ everywhere; tripling $\gamma$ scales the spillover delivered
-by the merger, and halving $\sigma$ doubles the logit slope $P(1-P)/\sigma$
-against any payoff change, so the combined effect on equilibrium quantities
-is roughly $6\times$. The recalibrated values stay well below the cost-floor
-saturation that sets in at $\gamma \gtrsim 0.30$, so the model is in its
-responsive interior. Full details, including the K-stability diagnostic and
-the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
-\texttt{notes/merger\_counterfactual.md}.
 
 \section{Counterfactual: Region-3 Innovation Subsidy}
 \label{sec:subsidy}
@@ -709,21 +555,23 @@ A region-3 \emph{entry} subsidy of size $\psi$ shifts the private cost
 of entering as a new-technology firm in region~3 from $\widehat{\phi}$
 to $(\widehat{\phi} - \psi)$ while leaving the social resource cost of
 entry unchanged at $\widehat{\phi}$. Sweeping $\psi$ over the grid
-$\psi / \widehat{\phi} \in \{0, 0.10, \ldots, 0.50\}$ shows that, in
-contrast to the innovation subsidy, \emph{aggregate welfare is weakly
-increasing in $\psi$ across the grid}. At the largest grid point
+$\psi / \widehat{\phi} \in \{0, 0.10, \ldots, 0.50\}$ shows that, like
+the innovation subsidy, \emph{aggregate welfare is weakly decreasing in
+$\psi$ across the grid}. At the largest grid point
 $\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$, region~3's
 $P(\mathrm{enter} \mid \mathrm{pe})$ rises by
-$\EntrySubsidyMaxEnterPctRThree\,\%$, and its own welfare moves by
-$\EntrySubsidyMaxDWPctRThree\,\%$, while regions~1 and~2 lose
-$\EntrySubsidyMaxDWPctROne\,\%$ and $\EntrySubsidyMaxDWPctRTwo\,\%$
-respectively; total welfare changes by
+$\EntrySubsidyMaxEnterPctRThree\,\%$ and its own welfare gains
+$\EntrySubsidyMaxDWPctRThree\,\%$, but regions~1 and~2 lose
+$|\EntrySubsidyMaxDWPctROne|\,\%$ and $|\EntrySubsidyMaxDWPctRTwo|\,\%$
+respectively, so total welfare moves by
 $\EntrySubsidyMaxDWPctTotal\,\%$. The welfare-maximising grid point is
 $\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$
-($\Delta\Sigma W = \EntrySubsidyOptimumDWPct\,\%$). The aggregate gain
-is small but positive, and the qualitative sign flip relative to the
-innovation subsidy comes from how each policy reshapes the new-tech
-market.
+($\Delta\Sigma W = \EntrySubsidyOptimumDWPct\,\%$). The
+own-region gain to region~3 is larger than under the innovation
+subsidy at the same private-cost reduction --- consistent with the
+intuition that fresh entrants add new-tech quantity without
+cannibalising existing old-gen output --- but the cross-region losses
+are correspondingly larger and dominate at the aggregate.
 
 \subsection{Subsidy specification}
 
@@ -783,8 +631,8 @@ Table~\ref{tab:entry_subsidy} reports the full grid sweep. Region~3's
 entry rate climbs from $\EntrySubsidyBaseEnterRThree$ at $\psi = 0$ to
 $\EntrySubsidyMaxEnterRThree$ at the largest grid point, while
 regions~1 and~2 dip very slightly through equilibrium feedback.
-Aggregate welfare is weakly increasing in $\psi$, and the
-welfare-maximising grid point is the largest one,
+Aggregate welfare is weakly decreasing in $\psi$, and the
+welfare-maximising grid point is
 $\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$.\\
 
 \begin{table}[ht]
@@ -818,46 +666,92 @@ $\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$.\\
   \centering
   \includegraphics[width=0.75\textwidth]{../output/figures/entry_subsidy_grid.pdf}
   \caption{Per-region and total welfare change vs.\ baseline as a
-           function of $\psi / \widehat{\phi}$. Aggregate welfare
-           (black) is weakly increasing in $\psi$; region~3's own
-           welfare gain exceeds the losses borne by regions~1 and~2.}
+           function of $\psi / \widehat{\phi}$. Region~3's own welfare
+           rises with $\psi$, but the losses borne by regions~1 and~2
+           are larger in magnitude, so aggregate welfare (black) is
+           weakly decreasing in $\psi$.}
   \label{fig:entry_subsidy_grid}
 \end{figure}
 
 \subsection{Discussion}
 
-The entry subsidy raises aggregate welfare; the innovation subsidy
-lowers it. Both move the same regional margin (more region-3 new-tech
-output) and use the same sovereign-funding accounting, so the sign
-flip has to come from how each policy reshapes the global new-tech
-market.\\
+Both subsidies lower aggregate welfare, but they trade off own-region
+gains against cross-region losses differently. The mechanism is the
+same in both: a region-3 subsidy moves region-3's new-tech output up at
+the cost of cheaper Cournot competition for regions~1 and~2.\\
 
-\textbf{Entry brings a fresh competitor without cannibalisation.}
-Innovating firms are old-tech incumbents that switch to ``both''.
-They were already producing old-tech output, and the new-tech output
-they add as ``both'' partly cannibalises that old-tech revenue
-through cross-market substitution $\rho$. New entrants, in contrast,
-arrive with no legacy old-tech output to displace. Each marginal
-entry therefore adds more total new-tech quantity at the global
-Cournot stage than each marginal innovation does, and the
-consumer-surplus gain is correspondingly larger relative to the
-producer-surplus losses borne by competitors.\\
+\textbf{Entry adds new-tech quantity without cannibalisation.}
+Innovating firms are old-tech incumbents that switch to ``both''. They
+were already producing old-tech output, and the new-tech output they
+add as ``both'' partly cannibalises that old-tech revenue through
+cross-market substitution $\rho$. New entrants, in contrast, arrive
+with no legacy old-tech output to displace. Each marginal entry
+therefore adds more total new-tech quantity at the global Cournot
+stage than each marginal innovation does. This shows up clearly at the
+regional level: at $\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$
+region~3's own welfare rises by $\EntrySubsidyMaxDWPctRThree\,\%$,
+versus only $\SubsidyMaxDWPctRThree\,\%$ at
+$\tau / \widehat{\kappa} = \SubsidyMaxFrac$ under the innovation
+subsidy.\\
 
-\textbf{The aggregate effect is small but positive.} At
-$\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$, total welfare rises
-by $\EntrySubsidyMaxDWPctTotal\,\%$ of baseline. Region~3 gains
-$\EntrySubsidyMaxDWPctRThree\,\%$ of its own welfare; regions~1 and~2
-lose $\EntrySubsidyMaxDWPctROne\,\%$ and
-$\EntrySubsidyMaxDWPctRTwo\,\%$ respectively. The losses to the
-non-treated regions are real (cheaper region-3 entrants depress the
-global new-tech price) but smaller in magnitude than under the
-innovation subsidy at the same private-cost reduction.\\
+\textbf{Cross-region spillovers dominate at the aggregate.}
+Cheaper region-3 production drags the global new-tech price down, so
+regions~1 and~2 see lower firm profits in both scenarios. Under the
+entry subsidy these losses are larger ---
+$|\EntrySubsidyMaxDWPctROne|\,\%$ and $|\EntrySubsidyMaxDWPctRTwo|\,\%$
+versus $|\SubsidyMaxDWPctROne|\,\%$ and $|\SubsidyMaxDWPctRTwo|\,\%$
+under innovation --- precisely because entry adds more new-tech
+quantity per unit of subsidy. The CS share regions~1 and~2 receive
+from cheaper goods is too small to compensate, so the cross-region
+losses outweigh region~3's gain. Aggregate welfare moves by
+$\EntrySubsidyMaxDWPctTotal\,\%$, slightly less negative than the
+innovation subsidy's $\SubsidyMaxDWPctTotal\,\%$ but still negative,
+and the welfare-maximising grid point is
+$\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$.\\
+
+\textbf{The aggregate result is calibration-dependent.} Under the
+$\kappa = \phi$ calibration adopted here, the higher entry resource
+cost is enough to flip what would otherwise be a marginally welfare-positive
+entry subsidy into a marginally welfare-negative one: aggregate
+welfare loses about $|\EntrySubsidyMaxDWPctTotal|\,\%$ at the largest
+grid point. With a lower $\widehat{\phi}$, the entry-subsidy result
+turns weakly positive; with a stronger spillover $\gamma$ that the
+planner internalises across regions, both subsidies improve the
+aggregate.\\
+
+\subsection{Joint subsidy grid}
+
+A joint sweep over $(\tau, \psi)$ on the $\JointSubsidyGridLengthTau
+\times \JointSubsidyGridLengthPsi$ grid confirms the picture: the
+welfare-maximising cell is the no-subsidy corner $(\tau/\widehat{\kappa},
+\psi/\widehat{\phi}) = (\JointSubsidyOptTauFrac,
+\JointSubsidyOptPsiFrac)$, with $\Delta\Sigma W =
+\JointSubsidyOptDWPct\,\%$. Among the corners, an entry-only subsidy
+($\JointSubsidyEntryOnlyMaxDWPct\,\%$) is less destructive than an
+innovation-only subsidy ($\JointSubsidyInnovOnlyMaxDWPct\,\%$), and
+combining the two compounds the loss
+($\JointSubsidyBothMaxDWPct\,\%$). Region~3 alone, however, prefers
+to maximise both: at $(\JointSubsidyROptTauFrac,
+\JointSubsidyROptPsiFrac)$ its welfare gains
+$\JointSubsidyROptDWPctRThree\,\%$ at the expense of regions~1 and~2.
+Figure~\ref{fig:joint_subsidy_heatmap} plots the aggregate heatmap.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/joint_subsidy_heatmap.pdf}
+  \caption{Aggregate welfare change $\Delta\Sigma W$ (\% of baseline)
+           on the joint $(\tau/\widehat{\kappa}, \psi/\widehat{\phi})$
+           grid. The argmax is at the no-subsidy corner; both axes
+           reduce aggregate welfare monotonically.}
+  \label{fig:joint_subsidy_heatmap}
+\end{figure}
 
 The result is consistent with the standard intuition that
-\emph{entry} subsidies correct an under-entry distortion in
-oligopoly more cleanly than \emph{technology-switching} subsidies,
-which have to net out the cannibalisation that the switching firm
-would otherwise impose on itself. Full details, including the
+\emph{entry} subsidies are a cleaner instrument than
+\emph{technology-switching} subsidies in oligopoly, since they
+sidestep the cannibalisation discount on the within-firm margin. But
+in this model the cross-region terms-of-trade losses run the other
+way and end up dominating both. Full details, including the
 K-stability diagnostic, are in
 \texttt{notes/entry\_subsidy\_counterfactual.md}.
 
@@ -881,5 +775,167 @@ K-stability diagnostic, are in
         The current 2-period setup avoids this because period~2 is
         terminal.
 \end{enumerate}
+
+\appendix
+
+\section{Counterfactual: EU--US Alliance}
+\label{sec:merger}
+
+Pooling regions~1 and~2's innovator counts lifts welfare by roughly
+$\MergerWelfPctROne\,\%$ in each allied region, leaves region~3 unchanged
+in welfare terms, and raises aggregate welfare by $\MergerWelfPctTotal\,\%$
+of baseline. Innovation rates rise by $\MergerInnovPctROne\,\%$ and
+$\MergerInnovPctRTwo\,\%$ in the allied regions and fall by
+$|\MergerInnovPctRThree|\,\%$ in region~3, so the unallied region is harmed
+on the real-economy margin even though it breaks even on welfare. The rest
+of the section sets up the spillover specification, derives the welfare
+formula, describes the Monte Carlo evaluation, and walks through the
+mechanism.
+
+\subsection{Spillover specification under the alliance}
+
+Under the baseline, region~$r$'s new-technology marginal cost depends only
+on its own innovators, equation~\eqref{eq:local_agglom}. Under the alliance
+of $\{1, 2\}$, regions~1 and~2 share an enlarged pool:
+\begin{equation}
+  c_{n,r,t}^{\mathrm{alliance}}
+    = \max\!\left\{0,\; c_{n,0} - \gamma_r \cdot \!\sum_{r' \in \mathrm{bloc}(r)}\!
+      \bigl(n_{b,r',t} + n_{n,r',t}\bigr)\right\},
+  \qquad
+  \mathrm{bloc}(1) = \mathrm{bloc}(2) = \{1, 2\},\
+  \mathrm{bloc}(3) = \{3\}.
+  \label{eq:bloc_pool}
+\end{equation}
+The cost floor prevents the marginal cost from turning negative; under the
+calibration $\gamma \le 0.15$ this constraint never binds. The implementation
+adds a single \texttt{blocs} field to the parameter struct; the default
+\texttt{(1,2,3)} recovers equation~\eqref{eq:local_agglom} bit-for-bit.
+
+\subsection{Welfare}
+
+The two-market linear demand of
+equations~\eqref{eq:demand_o}--\eqref{eq:demand_n} is rationalised by the
+quasi-linear utility $U = A(Q_o + Q_n) - \tfrac{b}{2}(Q_o^2 + Q_n^2) - s\,
+Q_o\, Q_n$ with $b = B/M$ and $s = \rho B/M$, giving consumer surplus
+\begin{equation}
+  \mathrm{CS}(s) = \tfrac{b}{2}(Q_o^2 + Q_n^2) + s\, Q_o\, Q_n.
+  \label{eq:cs}
+\end{equation}
+Because Cournot is global, $\mathrm{CS}$ is a single number; we allocate
+it equally across regions (equal-population assumption). Producer surplus
+is local: each firm's per-period profit is charged to its own region.
+Innovation and entry costs are paid by the firm's region in period~1.
+Two-period discounted welfare per region is
+\begin{equation}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\,\mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\,\mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+  \label{eq:welfare}
+\end{equation}
+which satisfies $\sum_r W_r = \mathrm{CS}_{\mathrm{total}} +
+\sum_r \mathrm{PS}_r - \sum_r (\kappa\, k^{\mathrm{innov}}_r +
+\phi\, k^{\mathrm{enter}}_r)$ by construction. The runner verifies this
+identity numerically and finds residuals at machine precision.
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \MergerNMarkets$ independent simulations per scenario.
+Each market draws its own initial state $s_0$ from the same distribution
+\texttt{simulate\_data.jl} uses, so the counterfactual sits on the same
+population the model was estimated on. The same seed (\MergerSeed) drives
+both scenarios, and per-market we use \texttt{MersenneTwister(seed + $k$)}.
+Identical $s_0$ draws and identical EVT1 shock paths under both scenarios
+mean each market contributes a paired observation
+$(W_r^{\mathrm{base}}, W_r^{\mathrm{alli}})$, so the variance of the
+welfare difference is much smaller than the variance of either level.
+Headline numbers stabilise to about $0.2$ percentage points by $K = 1000$.
+
+\subsection{Calibration and results}
+
+We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$, $c_{n,0}$,
+and $N_{\max}$ at the values of Table~\ref{tab:params}, and use the
+structural estimates from Section~\ref{sec:estimation}: $\widehat{\kappa} =
+\MergerKappaHat$, $\widehat{\phi} = \MergerPhiHat$, and uniform
+$\widehat{\gamma}_r = \MergerGammaHat$.\\
+
+Table~\ref{tab:merger} reports the full per-region decomposition.
+Innovation rises by $\MergerInnovPctROne\,\%$ in region~1 and
+$\MergerInnovPctRTwo\,\%$ in region~2, and falls by
+$|\MergerInnovPctRThree|\,\%$ in region~3. Entry rates move in the same
+direction with smaller magnitudes.\\
+
+\begin{table}[ht]
+  \centering
+  \caption{EU--US alliance: per-region equilibrium and welfare}
+  \medskip
+  \label{tab:merger}
+  \input{../output/tables/merger_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over $K = \MergerNMarkets$
+    independent markets, each drawing its own $s_0$ from the DGP used by
+    \texttt{simulate\_data.jl}; common random numbers across scenarios
+    (seed = \MergerSeed). Calibration: $\widehat{\kappa} = \MergerKappaHat$,
+    $\widehat{\phi} = \MergerPhiHat$, uniform
+    $\widehat{\gamma}_r = \MergerGammaHat$. Baseline blocs $(1,2,3)$;
+    alliance blocs $(1,1,2)$. CS allocated equally across the three
+    regions; PS$_r$ aggregates own-region firms' profits in both periods;
+    costs paid charges $\kappa\, k^{\mathrm{innov}}_r + \phi\,
+    k^{\mathrm{enter}}_r$ to region~$r$.}
+\end{table}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_innovation.pdf}
+  \caption{Innovation rate $P(\text{innov}\mid\text{old}, r)$ by region,
+           baseline vs.\ alliance.}
+  \label{fig:merger_innovation}
+\end{figure}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/merger_welfare.pdf}
+  \caption{Per-region discounted welfare $W_r$ baseline vs.\ alliance. Both
+           allied regions gain visibly; region~3's bars are
+           indistinguishable.}
+  \label{fig:merger_welfare}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{Allied regions gain in two ways.} Their pooled innovator count
+lowers $c_{n,1}$ and $c_{n,2}$ whenever \emph{either} region has an
+innovator, raising the period-2 profit of being on new tech. This pulls
+more firms into innovation and entry there, which raises producer surplus,
+and the additional new-tech output also lowers prices globally, raising
+the regions' share of consumer surplus. Welfare rises by
+$\MergerWelfPctROne\,\%$ in region~1 and $\MergerWelfPctRTwo\,\%$ in
+region~2.\\
+
+\textbf{Region~3 loses on innovation but breaks even on welfare.} Tougher
+global Cournot competition from cheaper allied competitors drags region~3's
+$P(\mathrm{innov})$ and $P(\mathrm{enter})$ down by about $4\,\%$ and
+$3\,\%$ respectively, and its $\mathrm{PS}_3$ falls by roughly $7\,\%$.
+Its share of the global CS gain is almost the same magnitude in the
+opposite direction, so its net welfare moves by less than a basis point
+($\MergerWelfPctRThree\,\%$). The unallied region is harmed in real-economy
+terms (less innovation, lower profits) but the consumer-side benefit of
+cheaper goods produced by the alliance compensates almost exactly.\\
+
+\textbf{The aggregate gain is positive and sizeable.} Total welfare rises
+by $\MergerWelfPctTotal\,\%$ of baseline. Roughly half of the gain accrues
+to each allied region, with a near-zero residual from region~3. Knowledge
+integration is a positive-sum game even before factoring in the aggregate
+consumer benefits.\\
+
+The result depends on the calibration. Under an earlier
+$(\gamma, \sigma) = (0.05, 1.0)$ setting the same alliance moved welfare by
+under $1\,\%$ everywhere; tripling $\gamma$ scales the spillover delivered
+by the merger, and halving $\sigma$ doubles the logit slope $P(1-P)/\sigma$
+against any payoff change, so the combined effect on equilibrium quantities
+is roughly $6\times$. The recalibrated values stay well below the cost-floor
+saturation that sets in at $\gamma \gtrsim 0.30$, so the model is in its
+responsive interior. Full details, including the K-stability diagnostic and
+the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
+\texttt{notes/merger\_counterfactual.md}.
 
 \end{document}
