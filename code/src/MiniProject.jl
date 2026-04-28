@@ -7,6 +7,7 @@ include("solver.jl")
 include("simulate.jl")
 include("estimate.jl")
 include("welfare.jl")
+include("planner.jl")
 
 export R
 export Params, default_params
@@ -19,5 +20,7 @@ export MarketData, recover_markets, nls_gamma, loglik_actions,
        loglik_market, mle_kappa_phi, bhhh_se
 export consumer_surplus, consumer_surplus_from_quantities,
        producer_surplus_by_region, welfare_for_market, expected_welfare_mc
+export competitive_outcome, social_welfare_static,
+       planner_welfare_at, expected_planner_welfare
 
 end

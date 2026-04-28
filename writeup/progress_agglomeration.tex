@@ -23,6 +23,7 @@
 \input{../output/estimates/estimation.txt}
 \input{../output/estimates/merger_estimates.txt}
 \input{../output/estimates/subsidy_estimates.txt}
+\input{../output/estimates/planner_estimates.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -491,7 +492,12 @@ more firms into innovation and entry there, which raises producer surplus,
 and the additional new-tech output also lowers prices globally, raising
 the regions' share of consumer surplus. Welfare rises by
 $\MergerWelfPctROne\,\%$ in region~1 and $\MergerWelfPctRTwo\,\%$ in
-region~2.\\
+region~2. The pull is sharper on innovation than on entry. An old firm
+weighing ``innovate'' against ``stay old'' sees its outside option
+worsen as the alliance lowers $c_n$: cheaper new-gen output depresses
+the old-gen price through cross-market substitution. A potential
+entrant's outside option is exit at value $0$, invariant to $c_n$, so
+only the upside moves and the entry response is roughly half as large.\\
 
 \textbf{Region~3 loses on innovation but breaks even on welfare.} Tougher
 global Cournot competition from cheaper allied competitors drags region~3's
@@ -699,6 +705,223 @@ natural comparator. With a larger $\widehat{\gamma}$ or a tighter $\rho$,
 the cross-region effects scale accordingly. Full details, including
 the K-stability diagnostic and the sovereign-funding accounting, are in
 \texttt{notes/subsidy\_counterfactual.md}.
+
+\section{Counterfactual: Constrained Social Planner}
+\label{sec:planner}
+
+A constrained social planner replaces firm-level decisions with logit
+choices that condition on social welfare differences instead of private
+ones. Two cuts isolate the dynamic and static channels: the
+\emph{dynamic-only first best} keeps Cournot production and only
+internalises the spillover, while the \emph{full first best} also
+imposes $P = MC$ in both periods. At the estimated calibration the
+full first best lifts aggregate welfare by $\PlannerDeltaFBPct\,\%$ of
+the equilibrium baseline. Almost all of the gain is the static markup
+correction ($\PlannerDeltaStaticPct\,\%$); the dynamic-only piece is
+\emph{negative} ($\PlannerDeltaDynPct\,\%$). The rest of the section
+sets up the planner CCPs, derives the welfare formula, describes the
+Monte Carlo evaluation, and walks through why the dynamic-only cut
+falls below equilibrium even though $\widehat{\gamma}_r > 0$.
+
+\subsection{Planner specification}
+
+The planner uses the same logit form firms use, with the firm's private
+continuation replaced by the social one. At every sub-stage decision the
+choice probability is
+\begin{equation}
+  \pi^{\mathrm{planner}}_a
+    = \frac{\exp\!\bigl((\bar{W}_a - \mathrm{cost}(a))/\sigma\bigr)}
+           {\sum_{a'}\exp\!\bigl((\bar{W}_{a'} - \mathrm{cost}(a'))/\sigma\bigr)},
+  \label{eq:planner_logit}
+\end{equation}
+where $\bar{W}_a = \mathbb{E}\!\left[\sum_r W_r \mid a_i = a\right]$ is
+the expected total social welfare conditional on the deciding firm
+choosing action $a$, integrated over peer CCPs. The planner inherits
+the same EVT1 shock scale $\sigma$ that firms use, so this is a
+\emph{constrained} planner with bounded rationality at the same noise
+level as the firms. The OLD-stage logit picks among $\{\text{stay},\,
+\text{innovate},\, \text{exit}\}$ with $\bar{W}_{\mathrm{innov}}$
+deducting $\kappa$; PE picks $\{\text{enter},\, \text{quit}\}$ with
+$\bar{W}_{\mathrm{enter}}$ deducting $\phi$; NEW and BOTH pick
+$\{\text{stay},\, \text{exit}\}$ with no immediate cost on either
+branch.\\
+
+Period-1 production happens at $s_0$ regardless of period-1 decisions.
+Period-1 social welfare is therefore independent of every stage
+decision and cancels in every $\bar{W}$-difference. The fixed-point
+machinery only needs the period-2 terminal value
+$V_1^{\mathrm{soc}}(s) = \mathrm{CS}(s) + \sum_r \mathrm{PS}_r(s)$,
+computed once on the full state space. The planner solver mirrors the
+equilibrium solver one stage at a time (PE $\to$ new $\to$ both $\to$
+old, regions $r = 1 \to 2 \to 3$ inside each stage). Full implementation
+in \texttt{code/src/planner.jl}.\\
+
+The two cuts share the planner CCPs of
+equation~\eqref{eq:planner_logit} but differ in the static welfare
+convention used to build $V_1^{\mathrm{soc}}$. Under the
+\emph{dynamic-only first best}, both periods use Cournot production,
+isolating the spillover channel: the only difference from the
+equilibrium is that the planner internalises how each innovator's
+$\Delta n_b$ lowers $c_n$ for everyone in the same spillover bloc.
+Under the \emph{full first best}, both periods use $P = MC$ pricing.
+With constant marginal cost, only the lowest-$c_n$ active new-gen
+region produces, and old-gen output splits symmetrically across all
+active old-tech firms. Producer surplus is zero by construction; the
+entire surplus accrues to consumers.
+
+\subsection{Welfare}
+
+Two-period discounted welfare per region keeps the form of
+equation~\eqref{eq:welfare} in both planner cuts:
+\begin{equation*}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\, \mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\, \mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+\end{equation*}
+with the surpluses evaluated at Cournot or competitive ($P = MC$)
+quantities depending on the cut. Under the full first best
+$\mathrm{PS}_r \equiv 0$ in every region, so the identity
+$\sum_r W_r = \mathrm{CS}_{\mathrm{total}} + \sum_r \mathrm{PS}_r
+- \sum_r (\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$
+collapses to $\sum_r W_r = \mathrm{CS}_{\mathrm{total}} - \sum_r
+(\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$. The
+runner verifies the identity numerically for all three scenarios;
+residuals are at machine precision ($\le 3 \times 10^{-13}$).
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \PlannerNMarkets$ independent simulations per scenario,
+with the same draw scheme as the merger and subsidy counterfactuals:
+per-market \texttt{MersenneTwister(seed + $k$)},
+$s_0 \sim \texttt{random\_s0(rng, p)}$, seed $= \PlannerSeed$. Identical
+$s_0$ draws across the equilibrium, dynamic-only, and full first best
+scenarios mean each market contributes a triple
+$(W_r^{\mathrm{eq}}, W_r^{\mathrm{dyn}}, W_r^{\mathrm{fb}})$, so the
+welfare differences $\Delta\Sigma W$ have much smaller variance than
+the levels.\\
+
+The planner's CCPs and continuation values are deterministic given
+$s_0$, so we do \emph{not} resample EVT1 shocks. Sampling stays at
+the $s_0$ level only.
+
+\subsection{Calibration and results}
+
+We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$,
+$c_{n,0}$, and $N_{\max}$ at the values of Table~\ref{tab:params}, and
+use the structural estimates from Section~\ref{sec:estimation}:
+$\widehat{\kappa} = \PlannerKappaHat$, $\widehat{\phi} =
+\PlannerPhiHat$, and uniform $\widehat{\gamma}_r = \PlannerGammaHat$.\\
+
+Table~\ref{tab:planner} reports the per-region decomposition for the
+three scenarios and Table~\ref{tab:planner_decomposition} reports the
+two welfare deltas plus the static slice. Aggregate welfare under the
+full first best is $\PlannerWelfFB$ versus $\PlannerWelfEq$ at
+equilibrium, a $\PlannerDeltaFBPct\,\%$ gain. The dynamic-only first
+best aggregates to $\PlannerWelfDyn$, $|\PlannerDeltaDynPct|\,\%$
+\emph{below} equilibrium. The static slice (full first best minus
+dynamic-only) is $\PlannerDeltaStaticPct\,\%$. Innovation rates fall
+under both planner cuts, from $\PlannerEqInnovROne$ at equilibrium to
+$\PlannerDynInnovROne$ under the dynamic-only first best to
+$\PlannerFBInnovROne$ under the full first best (region~1 numbers; the
+other regions move in lockstep under uniform $\widehat{\gamma}_r$).\\
+
+\begin{table}[ht]
+  \centering
+  \caption{Constrained planner: per-region equilibrium and welfare
+           across the three scenarios}
+  \medskip
+  \label{tab:planner}
+  \input{../output/tables/planner_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over $K = \PlannerNMarkets$
+    independent markets, each drawing its own $s_0$ from the DGP used by
+    \texttt{simulate\_data.jl}; common random numbers across all
+    scenarios (seed $= \PlannerSeed$). Calibration:
+    $\widehat{\kappa} = \PlannerKappaHat$, $\widehat{\phi} =
+    \PlannerPhiHat$, uniform $\widehat{\gamma}_r = \PlannerGammaHat$.
+    The dynamic-only first best uses planner CCPs with Cournot
+    production in both periods; the full first best uses planner CCPs
+    with $P = MC$ production (so $\mathrm{PS}_r = 0$ by construction).
+    CS allocated equally across the three regions; PS$_r$ aggregates
+    own-region firms' profits in both periods; costs paid charges
+    $\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r$ to
+    region~$r$.}
+\end{table}
+\begin{table}[ht]
+  \centering
+  \caption{Constrained planner: aggregate welfare deltas vs.\ equilibrium}
+  \medskip
+  \label{tab:planner_decomposition}
+  \input{../output/tables/planner_decomposition.tex}
+  \caption*{\footnotesize Notes: Aggregate welfare differences relative
+    to the equilibrium baseline of Table~\ref{tab:planner}, in absolute
+    units and in percent. The static slice is the gain from imposing
+    $P = MC$ on top of the planner CCPs (full first best minus
+    dynamic-only first best).}
+\end{table}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/planner_welfare.pdf}
+  \caption{Per-region discounted welfare $W_r$ under the equilibrium,
+           the dynamic-only first best, and the full first best. The
+           full first best gains in every region; the dynamic-only
+           first best loses in every region.}
+  \label{fig:planner_welfare}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{The static markup correction is the larger of the two gains.}
+At Cournot prices every active firm earns positive PS at the cost of
+deadweight loss. Imposing $P = MC$ turns those rents into consumer
+surplus and eliminates the triangle, leaving total surplus higher even
+though producer surplus drops to zero. Total welfare rises by
+$\PlannerDeltaStaticPct\,\%$ from this channel alone, and the piece is
+independent of the spillover. Any model with constant-marginal-cost
+Cournot competition would deliver a similar gain.\\
+
+\textbf{The dynamic-only first best falls below equilibrium because
+business-stealing dominates the spillover.} Two forces work against
+each other in the OLD-stage decision. The spillover pushes equilibrium
+innovation \emph{below} the social optimum: when a firm innovates it
+lowers $c_n$ for every new-gen producer in its bloc, a benefit it does
+not internalise. With constant marginal cost and a fixed innovation
+cost $\kappa$, the marginal social value of one more new-gen producer
+is decreasing in the number already producing. Adding the first
+new-gen producer in a region kills the entire deadweight-loss triangle.
+Adding the fifth barely makes a dent. The firm's private gain from
+innovating, roughly $\pi_b - \pi_o$ in steady state, does not fall in
+the same way: the firm always values its own access to the
+lower-MC technology. The result is a Mankiw-Whinston-style excess-entry
+effect. Firms over-innovate from the social perspective at moderately
+populated states, which are typical of $s_0$ under
+\texttt{random\_s0}. At our calibration the saturation force dominates
+the spillover, so the planner's $P(\mathrm{innov})$ sits below the
+equilibrium's, $\PlannerDynInnovROne$ versus $\PlannerEqInnovROne$ in
+region~1.\\
+
+\textbf{Reporting both cuts disentangles two distinct policy questions.}
+The static slice answers what moving Cournot toward $P = MC$ would
+deliver. The dynamic slice answers what internalising the spillover
+would deliver. At our calibration the static lever is about six times
+the absolute size of the dynamic lever, and the two effects are
+additive ($\PlannerDeltaStaticPct + \PlannerDeltaDynPct =
+\PlannerDeltaFBPct$ exactly, by construction). Either question can be
+studied without committing to the other; merging them into a single
+``first best'' number would obscure that the spillover channel by
+itself loses welfare at this calibration while the markup channel by
+itself wins big.\\
+
+The result depends on the calibration. With a larger $\widehat{\gamma}_r$
+the spillover would be worth more at the margin and could overturn the
+saturation force; with a smaller $\rho$ the static markup correction
+would shrink because the two product markets would be closer to
+independent. Full details, including the welfare-identity diagnostic,
+the K-stability check, and the diagnostic comparing
+$\beta\,\Delta V_1^{\mathrm{soc}}$ across $s_0$ configurations, are in
+\texttt{notes/planner\_counterfactual.md}.
 
 \section{Next Steps}
 
