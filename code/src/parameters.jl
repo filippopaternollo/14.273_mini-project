@@ -31,6 +31,7 @@ struct Params
     N_max::Int                      # max total firms incl. potential entrants (bounds state space)
     blocs::NTuple{R,Int}            # spillover-pool ids; default (1,2,3) → singletons
     subsidy::NTuple{R,Float64}      # per-region innovation subsidy τ_r ≥ 0; firm pays κ − τ_r
+    entry_subsidy::NTuple{R,Float64} # per-region entry subsidy ψ_r ≥ 0; entrant pays φ − ψ_r
 end
 
 """
@@ -48,7 +49,10 @@ without constructing a `Params` from scratch.  `subsidy` is the per-region
 innovation subsidy τ_r ≥ 0 (firms innovating in region `r` pay κ − τ_r
 out of pocket; the full κ remains the social resource cost).  It accepts a
 scalar (applied to every region) or an `NTuple{3,Float64}` for region-specific
-values, and defaults to no subsidy.
+values, and defaults to no subsidy.  `entry_subsidy` plays the analogous
+role for the PE → new entry decision: a region-`r` potential entrant pays
+φ − ψ_r out of pocket while the full φ remains the social resource cost.
+It accepts a scalar or an `NTuple{3,Float64}` and defaults to zero.
 
 The calibration `(γ, σ) = (0.15, 0.5)` is chosen to put innovation in the
 *responsive* region of the logit (γ below the c_n floor at γ ≳ 0.30, σ low
@@ -65,11 +69,14 @@ function default_params(; gamma = 0.15,
                           blocs::NTuple{R,Int} = (1, 2, 3),
                           kappa::Float64 = 0.3,
                           phi::Float64 = 0.2,
-                          subsidy = (0.0, 0.0, 0.0))
+                          subsidy = (0.0, 0.0, 0.0),
+                          entry_subsidy = (0.0, 0.0, 0.0))
     γ = gamma isa Number ? ntuple(_ -> Float64(gamma), R) :
                            NTuple{R,Float64}(gamma)
     τ = subsidy isa Number ? ntuple(_ -> Float64(subsidy), R) :
                              NTuple{R,Float64}(subsidy)
+    ψ = entry_subsidy isa Number ? ntuple(_ -> Float64(entry_subsidy), R) :
+                                   NTuple{R,Float64}(entry_subsidy)
     return Params(
         3.0,    # A
         1.0,    # B
@@ -84,6 +91,7 @@ function default_params(; gamma = 0.15,
         rho,
         N_max,
         blocs,
-        τ       # per-region innovation subsidy
+        τ,      # per-region innovation subsidy
+        ψ       # per-region entry subsidy
     )
 end

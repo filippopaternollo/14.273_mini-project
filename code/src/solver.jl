@@ -75,9 +75,13 @@ function solve_pe_region(s::State, r::Int, V1::Dict{State,EV}, p::Params,
         C.pe_ccp[key] = 0.0
         return 0.0
     end
+    # Region-r private entry cost is φ minus any per-entry subsidy.
+    # The full φ remains the social resource cost; the subsidy is a transfer
+    # paid by region r's own taxpayers (cancels in welfare; see welfare.jl).
+    phi_priv = p.phi - p.entry_subsidy[r]
     p_r = 0.5
     for _ in 1:max_iter
-        u_enter = -p.phi
+        u_enter = -phi_priv
         for v in 0:(n - 1)
             lp = log_binomial_prob(n - 1, v, p_r)
             lp == -Inf && continue
