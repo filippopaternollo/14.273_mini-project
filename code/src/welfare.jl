@@ -162,17 +162,19 @@ function welfare_for_market(rows, p::Params)
     # see no transfer term at all. We still track the (gross) outlay and
     # firm-side receipts so the reporting layer can show them.
     subsidy_received_r = ntuple(r -> p.subsidy[r] * k_innov_r[r], R)
-    gov_outlay_total   = sum(subsidy_received_r)
+    entry_subsidy_received_r = ntuple(r -> p.entry_subsidy[r] * k_enter_r[r], R)
+    gov_outlay_total   = sum(subsidy_received_r) + sum(entry_subsidy_received_r)
 
     welfare_r = ntuple(r -> cs_total_disc / R + ps_r[r] - costs_r[r], R)
 
     return (
-        cs_p1                      = cs_p1,
-        cs_p2                      = cs_p2,
-        ps_by_region               = ntuple(r -> ps_r[r],      R),
-        costs_by_region            = costs_r,
-        subsidy_received_by_region = subsidy_received_r,
-        gov_outlay_total           = gov_outlay_total,
+        cs_p1                            = cs_p1,
+        cs_p2                            = cs_p2,
+        ps_by_region                     = ntuple(r -> ps_r[r],      R),
+        costs_by_region                  = costs_r,
+        subsidy_received_by_region       = subsidy_received_r,
+        entry_subsidy_received_by_region = entry_subsidy_received_r,
+        gov_outlay_total                 = gov_outlay_total,
         k_innov_by_region          = ntuple(r -> k_innov_r[r], R),
         k_enter_by_region          = ntuple(r -> k_enter_r[r], R),
         n_old_by_region            = ntuple(r -> n_old_r[r],   R),
@@ -217,11 +219,12 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
     ev_pe  = Dict{Tuple{State,Int}, EV}()
 
     cs_p1 = 0.0;  cs_p2 = 0.0
-    ps_r            = zeros(Float64, R)
-    costs_r         = zeros(Float64, R)
-    welfare_r       = zeros(Float64, R)
-    subsidy_recv_r  = zeros(Float64, R)
-    gov_outlay_tot  = 0.0
+    ps_r              = zeros(Float64, R)
+    costs_r           = zeros(Float64, R)
+    welfare_r         = zeros(Float64, R)
+    subsidy_recv_r    = zeros(Float64, R)
+    entry_subsidy_recv_r = zeros(Float64, R)
+    gov_outlay_tot    = 0.0
     k_innov_r       = zeros(Int, R)
     k_enter_r       = zeros(Int, R)
     n_old_r         = zeros(Int, R)
@@ -240,6 +243,7 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
             costs_r[r]        += w.costs_by_region[r]
             welfare_r[r]      += w.welfare_by_region[r]
             subsidy_recv_r[r] += w.subsidy_received_by_region[r]
+            entry_subsidy_recv_r[r] += w.entry_subsidy_received_by_region[r]
             k_innov_r[r]      += w.k_innov_by_region[r]
             k_enter_r[r]      += w.k_enter_by_region[r]
             n_old_r[r]        += w.n_old_by_region[r]
@@ -254,6 +258,7 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
     costs_avg        = ntuple(r -> costs_r[r] / K,         R)
     welfare_avg      = ntuple(r -> welfare_r[r] / K,       R)
     subsidy_recv_avg = ntuple(r -> subsidy_recv_r[r] / K,  R)
+    entry_subsidy_recv_avg = ntuple(r -> entry_subsidy_recv_r[r] / K, R)
     innov_rate       = ntuple(r -> n_old_r[r] > 0 ? k_innov_r[r] / n_old_r[r] : 0.0, R)
     enter_rate       = ntuple(r -> n_pe_r[r]  > 0 ? k_enter_r[r] / n_pe_r[r]  : 0.0, R)
 
@@ -263,6 +268,7 @@ function expected_welfare_mc(p::Params; n_markets::Int = 5000,
         ps_by_region                = ps_avg,
         costs_by_region             = costs_avg,
         subsidy_received_by_region  = subsidy_recv_avg,
+        entry_subsidy_received_by_region = entry_subsidy_recv_avg,
         gov_outlay_total            = gov_outlay_tot / K,
         welfare_by_region           = welfare_avg,
         innov_rate_by_region        = innov_rate,

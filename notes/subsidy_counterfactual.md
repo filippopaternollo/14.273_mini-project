@@ -1,17 +1,17 @@
-# Region-1 innovation subsidy counterfactual
+# Region-3 innovation subsidy counterfactual
 
-A region-1 innovation subsidy of size τ shifts the private cost of
-innovation in region 1 from κ̂ to (κ̂ − τ) while leaving the social
+A region-3 innovation subsidy of size τ shifts the private cost of
+innovation in region 3 from κ̂ to (κ̂ − τ) while leaving the social
 resource cost unchanged at κ̂. Each region is treated as a sovereign
 country: its own government funds its own subsidy from its own taxpayers,
-so the τ·k_innov,1 transfer cancels exactly inside region 1's welfare and
+so the τ·k_innov,3 transfer cancels exactly inside region 3's welfare and
 never crosses borders. Sweeping τ over the grid τ/κ̂ ∈ {0, 0.1, …, 0.5}
-shows that **aggregate welfare is monotonically (weakly) decreasing in
-the subsidy across the entire grid**, with the welfare-maximising point
-at τ = 0. Region 1 raises P(innov | old) by **+18.45 %** at the largest
-grid point but its own welfare moves by only **+0.02 %**, while regions 2
-and 3 lose **−0.06 %** and **−0.10 %** respectively. The estimator we
-use is in `code/src/estimate.jl`; the counterfactual runner is
+shows that **aggregate welfare is weakly decreasing in the subsidy
+across the entire grid**, with the welfare-maximising point at τ = 0.
+Region 3 raises P(innov | old) by **+18.73 %** at the largest grid point
+and its own welfare moves by **+0.06 %**, while regions 1 and 2 lose
+**−0.08 %** and **−0.09 %** respectively. The estimator we use is in
+`code/src/estimate.jl`; the counterfactual runner is
 `code/scripts/run_subsidy.jl`.
 
 ## Setup
@@ -31,8 +31,8 @@ and one line in `solver.jl` (`kappa_priv = p.kappa - p.subsidy[r]`);
 everything else propagates automatically because every CCP reads its κ
 through that local variable.
 
-We sweep a one-region subsidy `(τ, 0, 0)` rather than a global one. This
-isolates the question "what does targeted industrial policy in region 1
+We sweep a one-region subsidy `(0, 0, τ)` rather than a global one. This
+isolates the question "what does targeted industrial policy in region 3
 do?" from the question "should the planet subsidise R&D at all?". The
 spillover spec stays at the local-only baseline `c_{n,r} = c_{n0} −
 γ_r·(n_b[r] + n_n[r])`; pooling spillovers across regions is the
@@ -71,9 +71,9 @@ verifies it numerically and finds residuals at machine precision
 This is the right accounting if one believes that the relevant unit of
 analysis is a single sovereign region whose government balances its own
 budget. It is *not* the right accounting for a federal system where a
-central authority uses general taxation to fund region-r's subsidy out
-of region-r' taxpayers' money: in that setting one would charge each
-region τ·k_innov,1 / R as a federal tax.
+central authority uses general taxation to fund region-3's subsidy out
+of every region's taxpayers' money: in that setting one would charge
+each region τ·k_innov,3 / R as a federal tax.
 
 ## Sample design
 
@@ -100,14 +100,12 @@ K-stability at the largest grid point (τ/κ̂ = 0.5):
 
 | K     | ΔW₁     | ΔW₂     | ΔW₃     | ΔW₁ %    | ΔW₂ %    | ΔW₃ %    | ΔΣW %    |
 |-------|---------|---------|---------|----------|----------|----------|----------|
-| 500   | +0.0001 | −0.0022 | −0.0009 | +0.00 %  | −0.10 %  | −0.04 %  | −0.05 %  |
-| 1000  | +0.0009 | −0.0009 | −0.0023 | +0.04 %  | −0.04 %  | −0.11 %  | −0.04 %  |
-| 5000  | +0.0005 | −0.0012 | −0.0021 | +0.02 %  | −0.06 %  | −0.10 %  | −0.04 %  |
+| 500   | −0.0024 | +0.0008 | +0.0020 | −0.12 %  | +0.03 %  | +0.09 %  | +0.01 %  |
+| 1000  | −0.0020 | −0.0008 | +0.0018 | −0.09 %  | −0.04 %  | +0.08 %  | −0.02 %  |
+| 5000  | −0.0017 | −0.0018 | +0.0013 | −0.08 %  | −0.09 %  | +0.06 %  | −0.04 %  |
 
 Headline numbers stabilise to roughly 0.05 percentage points by `K =
-1000`. We report `K = 5000` for the headline. The signs are stable
-across `K` for regions 2 and 3 (consistently negative) and very small in
-region 1 (basically zero).
+1000`. We report `K = 5000` for the headline.
 
 ## Calibration
 
@@ -130,48 +128,49 @@ Innovation rates (period-1 old → both, pooled across markets):
 | τ / κ̂ | τ      | P_innov,1 | P_innov,2 | P_innov,3 |
 |-------|--------|-----------|-----------|-----------|
 | 0.00  | 0.0000 | 0.3507    | 0.3495    | 0.3533    |
-| 0.10  | 0.0300 | 0.3615    | 0.3495    | 0.3533    |
-| 0.20  | 0.0600 | 0.3760    | 0.3495    | 0.3533    |
-| 0.30  | 0.0901 | 0.3900    | 0.3487    | 0.3529    |
-| 0.40  | 0.1201 | 0.4050    | 0.3487    | 0.3524    |
-| 0.50  | 0.1501 | 0.4154    | 0.3487    | 0.3524    |
+| 0.10  | 0.0300 | 0.3507    | 0.3495    | 0.3630    |
+| 0.20  | 0.0600 | 0.3484    | 0.3495    | 0.3776    |
+| 0.30  | 0.0901 | 0.3484    | 0.3487    | 0.3886    |
+| 0.40  | 0.1201 | 0.3480    | 0.3482    | 0.3996    |
+| 0.50  | 0.1501 | 0.3475    | 0.3482    | 0.4195    |
 
-Region 1's P(innov) climbs steadily from `0.3507` at τ = 0 to `0.4154`
-at the largest grid point, a `+18.45 %` lift. Regions 2 and 3 barely
-move; their tiny declines reflect the negligible state-distribution
-spillover (more region-1 innovators today shifts the period-2 state
-slightly, which feeds back into other regions' decisions).
+Region 3's P(innov) climbs steadily from `0.3533` at τ = 0 to `0.4195`
+at the largest grid point, a `+18.73 %` lift. Regions 1 and 2 dip
+slightly; this reflects competitive feedback through the global Cournot
+stage and through the period-2 state distribution (more region-3
+innovators today depresses the new-tech price tomorrow, which makes
+period-1 innovation in regions 1 and 2 a slightly worse bet).
 
 Welfare deltas vs. baseline:
 
 | τ / κ̂ | ΔW₁     | ΔW₂     | ΔW₃     | ΔΣW     | ΔΣW %  |
 |-------|---------|---------|---------|---------|--------|
 | 0.00  | +0.0000 | +0.0000 | +0.0000 | +0.0000 | +0.00 %|
-| 0.10  | +0.0004 | −0.0002 | −0.0003 | −0.0002 | −0.00 %|
-| 0.20  | +0.0004 | −0.0004 | −0.0007 | −0.0007 | −0.01 %|
-| 0.30  | +0.0007 | −0.0008 | −0.0015 | −0.0017 | −0.03 %|
-| 0.40  | +0.0005 | −0.0010 | −0.0018 | −0.0024 | −0.04 %|
-| 0.50  | +0.0005 | −0.0012 | −0.0021 | −0.0028 | −0.04 %|
+| 0.10  | −0.0003 | −0.0004 | +0.0001 | −0.0006 | −0.01 %|
+| 0.20  | −0.0007 | −0.0009 | +0.0007 | −0.0008 | −0.01 %|
+| 0.30  | −0.0009 | −0.0011 | +0.0007 | −0.0013 | −0.02 %|
+| 0.40  | −0.0010 | −0.0015 | +0.0009 | −0.0016 | −0.03 %|
+| 0.50  | −0.0017 | −0.0018 | +0.0013 | −0.0023 | −0.04 %|
 
 Aggregate welfare is **weakly decreasing in τ across the entire grid**;
-the welfare-maximising grid point is τ = 0. Region 1's own welfare
+the welfare-maximising grid point is τ = 0. Region 3's own welfare
 gains are an order of magnitude smaller than its innovation-rate gain,
-because the subsidy mostly redistributes within region 1 (taxpayers →
+because the subsidy mostly redistributes within region 3 (taxpayers →
 firms) and only a small slice of the innovation gain reaches consumers
-or augments long-run profits net of full κ. Regions 2 and 3 lose a
-small but consistent amount: cheaper region-1 production drags the
+or augments long-run profits net of full κ. Regions 1 and 2 lose a
+small but consistent amount: cheaper region-3 production drags the
 new-technology price down globally, so non-treated firms see lower
 profits, and their CS gain from cheaper goods is too small to compensate.
 
 The mechanism is the textbook one but in reverse. A subsidy is welfare-
 improving only if there is a positive externality from the subsidised
 margin that the firm fails to internalise. In our calibration the
-agglomeration externality `γ̂ = 0.15` is *local* — region 1's innovation
-helps only region 1's own future cost. So the externality the firm
+agglomeration externality `γ̂ = 0.15` is *local* — region 3's innovation
+helps only region 3's own future cost. So the externality the firm
 fails to internalise (its effect on its *own* future cost via state
 transitions) is small relative to the subsidy's distortion of its
 period-1 cost. Cournot competition across regions, by contrast, makes
-region-1 expansion a *negative* externality on regions 2 and 3, which
+region-3 expansion a *negative* externality on regions 1 and 2, which
 the planner does internalise. Both forces push the optimum toward
 τ = 0.
 
@@ -187,11 +186,9 @@ by population shares.
 
 The local-spillover specification `c_{n,r} = c_{n0} − γ_r·(n_b[r] +
 n_n[r])` is what makes the optimum τ = 0. Under the alliance spec
-(`notes/merger_counterfactual.md`) where a region-1 subsidy *also*
-lowers region-2's cost, the planner would internalise more of the
-benefit and the optimum would shift right. A version of this exercise
-under blocs `(1, 1, 2)` would directly target the question "should an
-EU–US alliance subsidise innovation jointly?".
+(`notes/merger_counterfactual.md`) where a region-3 subsidy *also*
+lowered partner regions' costs, the planner would internalise more of
+the benefit and the optimum would shift right.
 
 EVT1 shocks are a smoothing device. The realised-shock contribution to
 firm welfare, `σ · γ_em` per decision, is omitted from `PS_r` for the

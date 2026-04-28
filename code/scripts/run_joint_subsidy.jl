@@ -1,0 +1,209 @@
+"""
+run_joint_subsidy.jl — Joint region-3 entry + innovation subsidy grid sweep.
+
+For each (τ, ψ) on the grid {0, 0.1, …, 0.5} × {0, 0.1, …, 0.5}, where
+τ = frac_τ · κ̂ is the region-3 innovation subsidy and ψ = frac_ψ · φ̂ is
+the region-3 entry subsidy, we evaluate aggregate welfare under the same
+sovereign-funding accounting used by `run_subsidy.jl` and
+`run_entry_subsidy.jl`. Common random numbers (same seed and per-market
+RNG) are used across baseline and every grid cell.
+
+Outputs:
+  - output/tables/joint_subsidy_dWpct.tex    (ΔΣW % grid as booktabs table)
+  - output/figures/joint_subsidy_heatmap.pdf (ΔΣW % heatmap)
+  - output/estimates/joint_subsidy_estimates.txt (LaTeX macros: optimum cell)
+"""
+
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+
+include(joinpath(@__DIR__, "../src/MiniProject.jl"))
+using .MiniProject
+using Plots, Printf, Random
+
+# ── Output paths ────────────────────────────────────────────────────────────
+const OUTPUT_DIR = joinpath(@__DIR__, "../../output")
+const OUT_TAB    = joinpath(OUTPUT_DIR, "tables")
+const OUT_FIG    = joinpath(OUTPUT_DIR, "figures")
+const OUT_EST    = joinpath(OUTPUT_DIR, "estimates")
+mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST)
+
+# ── Calibration: estimated parameters ───────────────────────────────────────
+const EST_PATH = joinpath(OUTPUT_DIR, "estimates", "estimation.txt")
+
+function read_macro(path::String, name::String)
+    pat = Regex("\\\\newcommand\\{\\\\$name\\}\\{([^}]+)\\}")
+    for line in eachline(path)
+        m = match(pat, line)
+        m !== nothing && return parse(Float64, m.captures[1])
+    end
+    error("Macro \\$name not found in $path")
+end
+
+const KAPPA_HAT = read_macro(EST_PATH, "InnovCostHat")
+const PHI_HAT   = read_macro(EST_PATH, "EntryCostHat")
+const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
+                   read_macro(EST_PATH, "SpilloverTwoHat"),
+                   read_macro(EST_PATH, "SpilloverThreeHat"))
+
+# ── Joint grid: (τ/κ̂, ψ/φ̂) ────────────────────────────────────────────────
+const TAU_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
+const PSI_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
+
+# ── MC configuration ────────────────────────────────────────────────────────
+const N_MARKETS = 5000
+const SEED      = 20260424
+
+# ── Baseline ────────────────────────────────────────────────────────────────
+p_base = default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
+                          subsidy = (0.0, 0.0, 0.0),
+                          entry_subsidy = (0.0, 0.0, 0.0))
+
+@printf("=== Region-3 joint (innovation + entry) subsidy: %d×%d grid ===\n",
+        length(TAU_FRAC), length(PSI_FRAC))
+@printf("  Calibration: κ̂ = %.4f,  φ̂ = %.4f,  γ̂ = (%.4f, %.4f, %.4f)\n",
+        KAPPA_HAT, PHI_HAT, GAMMA_HAT...)
+@printf("  τ/κ̂ ∈ %s\n", TAU_FRAC)
+@printf("  ψ/φ̂ ∈ %s\n", PSI_FRAC)
+@printf("  Markets per cell: K = %d   |   seed = %d   (CRN)\n",
+        N_MARKETS, SEED)
+
+println("\nBaseline (no subsidy)…")
+@time w_base = expected_welfare_mc(p_base; n_markets = N_MARKETS, seed = SEED)
+
+# ── Sweep ───────────────────────────────────────────────────────────────────
+nT = length(TAU_FRAC); nP = length(PSI_FRAC)
+dWtot      = Matrix{Float64}(undef, nT, nP)
+dWtot_pct  = Matrix{Float64}(undef, nT, nP)
+dW_r3_pct  = Matrix{Float64}(undef, nT, nP)
+dW_r1_pct  = Matrix{Float64}(undef, nT, nP)
+dW_r2_pct  = Matrix{Float64}(undef, nT, nP)
+
+println("\n=== Grid sweep (CRN) ===")
+@printf("  %6s %6s | %10s %10s | %+9s %+9s %+9s\n",
+        "τ/κ̂", "ψ/φ̂", "ΔΣW", "ΔΣW %", "ΔW₁ %", "ΔW₂ %", "ΔW₃ %")
+
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    τ = fT * KAPPA_HAT
+    ψ = fP * PHI_HAT
+    p_g = default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
+                           subsidy       = (0.0, 0.0, τ),
+                           entry_subsidy = (0.0, 0.0, ψ))
+    w_g = expected_welfare_mc(p_g; n_markets = N_MARKETS, seed = SEED)
+    Δ   = w_g.total_welfare - w_base.total_welfare
+    Δp  = 100.0 * Δ / w_base.total_welfare
+    dWtot[i,j]     = Δ
+    dWtot_pct[i,j] = Δp
+    dW_r1_pct[i,j] = 100.0 * (w_g.welfare_by_region[1] - w_base.welfare_by_region[1]) / w_base.welfare_by_region[1]
+    dW_r2_pct[i,j] = 100.0 * (w_g.welfare_by_region[2] - w_base.welfare_by_region[2]) / w_base.welfare_by_region[2]
+    dW_r3_pct[i,j] = 100.0 * (w_g.welfare_by_region[3] - w_base.welfare_by_region[3]) / w_base.welfare_by_region[3]
+    @printf("  %6.2f %6.2f | %+10.4f %+9.2f%% | %+8.2f%% %+8.2f%% %+8.2f%%\n",
+            fT, fP, Δ, Δp, dW_r1_pct[i,j], dW_r2_pct[i,j], dW_r3_pct[i,j])
+end
+
+# ── Optimum cell ────────────────────────────────────────────────────────────
+i_best, j_best = Tuple(argmax(dWtot))
+@printf("\n  Welfare-max cell: τ/κ̂ = %.2f,  ψ/φ̂ = %.2f   ΔΣW = %+.4f  (%+.2f%%)\n",
+        TAU_FRAC[i_best], PSI_FRAC[j_best],
+        dWtot[i_best,j_best], dWtot_pct[i_best,j_best])
+
+# ── Heatmap of ΔΣW % ───────────────────────────────────────────────────────
+plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct;
+              xlabel = "Entry-subsidy fraction ψ / φ̂",
+              ylabel = "Innovation-subsidy fraction τ / κ̂",
+              title  = "ΔΣW (% of baseline): joint region-3 subsidies",
+              c = :balance, clims = (-maximum(abs, dWtot_pct), maximum(abs, dWtot_pct)),
+              colorbar_title = "ΔΣW %",
+              size = (720, 540),
+              titlefontsize = 12, guidefontsize = 10,
+              tickfontsize = 9,
+              left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
+              right_margin = 7Plots.mm, top_margin = 3Plots.mm)
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    annotate!(plt, fP, fT, text(@sprintf("%+.2f", dWtot_pct[i,j]), 8, :black))
+end
+scatter!(plt, [PSI_FRAC[j_best]], [TAU_FRAC[i_best]];
+         marker = :star5, ms = 12, color = :gold, label = "argmax",
+         legend = :topleft)
+fig_path = joinpath(OUT_FIG, "joint_subsidy_heatmap.pdf")
+savefig(plt, fig_path)
+println("\nSaved figure: $fig_path")
+
+# ── Heatmap of ΔW₃ % (treated region) ─────────────────────────────────────
+i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
+plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct;
+               xlabel = "Entry-subsidy fraction ψ / φ̂",
+               ylabel = "Innovation-subsidy fraction τ / κ̂",
+               title  = "ΔW₃ (% of baseline): joint region-3 subsidies",
+               c = :balance, clims = (-maximum(abs, dW_r3_pct), maximum(abs, dW_r3_pct)),
+               colorbar_title = "ΔW₃ %",
+               size = (720, 540),
+               titlefontsize = 12, guidefontsize = 10,
+               tickfontsize = 9,
+               left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
+               right_margin = 7Plots.mm, top_margin = 3Plots.mm)
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    annotate!(plt3, fP, fT, text(@sprintf("%+.2f", dW_r3_pct[i,j]), 8, :black))
+end
+scatter!(plt3, [PSI_FRAC[j_best_r3]], [TAU_FRAC[i_best_r3]];
+         marker = :star5, ms = 12, color = :gold, label = "argmax",
+         legend = :topleft)
+fig_path_r3 = joinpath(OUT_FIG, "joint_subsidy_heatmap_r3.pdf")
+savefig(plt3, fig_path_r3)
+println("Saved figure: $fig_path_r3")
+
+# ── Table: ΔΣW % grid ──────────────────────────────────────────────────────
+sgn2(x) = x ≥ 0 ? @sprintf("%+.2f", x) : @sprintf("%.2f", x)
+
+global tex
+tex = "\\begin{tabular}{c|" * "c"^nP * "}\n\\toprule\n"
+tex *= " & \\multicolumn{$nP}{c}{\$\\psi/\\widehat{\\phi}\$} \\\\\n"
+tex *= "\$\\tau/\\widehat{\\kappa}\$ & "
+tex *= join([@sprintf("%.2f", fP) for fP in PSI_FRAC], " & ") * " \\\\\n"
+tex *= "\\midrule\n"
+for (i, fT) in enumerate(TAU_FRAC)
+    global tex
+    cells = [sgn2(dWtot_pct[i,j]) * "\\%" for j in 1:nP]
+    tex *= @sprintf("%.2f & %s \\\\\n", fT, join(cells, " & "))
+end
+tex *= "\\bottomrule\n\\end{tabular}\n"
+
+table_path = joinpath(OUT_TAB, "joint_subsidy_dWpct.tex")
+open(table_path, "w") do io; write(io, tex); end
+println("Saved table: $table_path")
+
+# ── LaTeX macros ───────────────────────────────────────────────────────────
+fmt(x)  = @sprintf("%.4f", x)
+fmt2(x) = @sprintf("%.2f", x)
+sgn(x)  = x ≥ 0 ? @sprintf("%+.4f", x) : @sprintf("%.4f", x)
+
+macros = """% Auto-generated by code/scripts/run_joint_subsidy.jl
+% Joint region-3 (innovation × entry) subsidy grid sweep.
+% τ/κ̂ ∈ $(TAU_FRAC); ψ/φ̂ ∈ $(PSI_FRAC); K = $N_MARKETS; CRN seed = $SEED.
+\\newcommand{\\JointSubsidyNMarkets}{$N_MARKETS}
+\\newcommand{\\JointSubsidySeed}{$SEED}
+\\newcommand{\\JointSubsidyGridLengthTau}{$(length(TAU_FRAC))}
+\\newcommand{\\JointSubsidyGridLengthPsi}{$(length(PSI_FRAC))}
+\\newcommand{\\JointSubsidyOptTauFrac}{$(fmt2(TAU_FRAC[i_best]))}
+\\newcommand{\\JointSubsidyOptPsiFrac}{$(fmt2(PSI_FRAC[j_best]))}
+\\newcommand{\\JointSubsidyOptTau}{$(fmt(TAU_FRAC[i_best]*KAPPA_HAT))}
+\\newcommand{\\JointSubsidyOptPsi}{$(fmt(PSI_FRAC[j_best]*PHI_HAT))}
+\\newcommand{\\JointSubsidyOptDWTotal}{$(sgn(dWtot[i_best,j_best]))}
+\\newcommand{\\JointSubsidyOptDWPct}{$(sgn2(dWtot_pct[i_best,j_best]))}
+\\newcommand{\\JointSubsidyOptDWPctROne}{$(sgn2(dW_r1_pct[i_best,j_best]))}
+\\newcommand{\\JointSubsidyOptDWPctRTwo}{$(sgn2(dW_r2_pct[i_best,j_best]))}
+\\newcommand{\\JointSubsidyOptDWPctRThree}{$(sgn2(dW_r3_pct[i_best,j_best]))}
+% Corner cells (innov-only at largest τ; entry-only at largest ψ; both at max)
+\\newcommand{\\JointSubsidyInnovOnlyMaxDWPct}{$(sgn2(dWtot_pct[end,1]))}
+\\newcommand{\\JointSubsidyEntryOnlyMaxDWPct}{$(sgn2(dWtot_pct[1,end]))}
+\\newcommand{\\JointSubsidyBothMaxDWPct}{$(sgn2(dWtot_pct[end,end]))}
+% Region-3 welfare-max cell
+\\newcommand{\\JointSubsidyROptTauFrac}{$(fmt2(TAU_FRAC[i_best_r3]))}
+\\newcommand{\\JointSubsidyROptPsiFrac}{$(fmt2(PSI_FRAC[j_best_r3]))}
+\\newcommand{\\JointSubsidyROptDWPctRThree}{$(sgn2(dW_r3_pct[i_best_r3,j_best_r3]))}
+"""
+macro_path = joinpath(OUT_EST, "joint_subsidy_estimates.txt")
+open(macro_path, "w") do io; write(io, macros); end
+println("Saved macros: $macro_path")
+
+println("\nDone.")
