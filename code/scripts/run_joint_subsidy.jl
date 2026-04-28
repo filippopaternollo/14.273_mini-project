@@ -57,11 +57,8 @@ const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
                    read_macro(EST_PATH, "SpilloverThreeHat"))
 
 # ── Joint grid: (τ/κ̂, ψ/φ̂) ────────────────────────────────────────────────
-# 11×11 grid in steps of 0.05. A 3×3 box average is applied before
-# plotting (see `box_smooth` below) to reduce per-cell MC noise; the
-# argmax cell is computed from the raw matrix.
-const TAU_FRAC = collect(0.0:0.05:0.50)
-const PSI_FRAC = collect(0.0:0.05:0.50)
+const TAU_FRAC = collect(0.0:0.10:0.50)
+const PSI_FRAC = collect(0.0:0.10:0.50)
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000
@@ -163,33 +160,16 @@ i_best_zg, j_best_zg = Tuple(argmax(dWtot_zg))
         TAU_FRAC[i_best_zg], PSI_FRAC[j_best_zg],
         dWtot_zg[i_best_zg,j_best_zg], dWtot_pct_zg[i_best_zg,j_best_zg])
 
-# Visual smoothing: a 3×3 box average tames per-cell MC noise without
-# moving the argmax cell (computed above from the raw matrix). Used
-# only for the figure; macros and the booktabs table use raw data.
-function box_smooth(M::Matrix{Float64})
-    n, m = size(M)
-    S = similar(M)
-    @inbounds for i in 1:n, j in 1:m
-        s = 0.0; c = 0
-        for di in -1:1, dj in -1:1
-            ii = i + di; jj = j + dj
-            (ii < 1 || ii > n || jj < 1 || jj > m) && continue
-            s += M[ii, jj]; c += 1
-        end
-        S[i, j] = s / c
-    end
-    return S
-end
-
 # ── Heatmap of ΔΣW % under γ = γ̂, with both planner argmaxes overlaid ─────
-dWtot_pct_smooth = box_smooth(dWtot_pct)
-hmax = maximum(abs, dWtot_pct_smooth)
-plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct_smooth;
+# Sequential colormap (light → dark blue): white at 0, darker = more
+# positive ΔΣW. All cells are non-negative under γ = γ̂.
+hmax = maximum(dWtot_pct)
+plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct;
               xlabel = "Entry-subsidy fraction  ψ / φ̂",
               ylabel = "Innovation-subsidy fraction  τ / κ̂",
               title  = "Aggregate welfare change ΔΣW (% of baseline)",
-              c = cgrad(:RdBu, rev = true),
-              clims = (-hmax, hmax),
+              c = cgrad(:Blues),
+              clims = (0.0, hmax),
               colorbar_title = " ΔΣW (%)",
               size = (760, 560),
               dpi = 200,
@@ -215,14 +195,13 @@ println("\nSaved figure: $fig_path")
 
 # ── Heatmap of ΔW₃ % (treated region) ─────────────────────────────────────
 i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
-dW_r3_pct_smooth = box_smooth(dW_r3_pct)
-hmax_r3 = maximum(abs, dW_r3_pct_smooth)
-plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct_smooth;
+hmax_r3 = maximum(dW_r3_pct)
+plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct;
                xlabel = "Entry-subsidy fraction  ψ / φ̂",
                ylabel = "Innovation-subsidy fraction  τ / κ̂",
                title  = "Region-3 welfare change ΔW₃ (% of baseline)",
-               c = cgrad(:RdBu, rev = true),
-               clims = (-hmax_r3, hmax_r3),
+               c = cgrad(:Blues),
+               clims = (0.0, hmax_r3),
                colorbar_title = " ΔW₃ (%)",
                size = (760, 560),
                dpi = 200,
