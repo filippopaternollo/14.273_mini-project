@@ -57,8 +57,11 @@ const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
                    read_macro(EST_PATH, "SpilloverThreeHat"))
 
 # ── Joint grid: (τ/κ̂, ψ/φ̂) ────────────────────────────────────────────────
-const TAU_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
-const PSI_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
+# 11×11 grid in steps of 0.05. A 3×3 box average is applied before
+# plotting (see `box_smooth` below) to reduce per-cell MC noise; the
+# argmax cell is computed from the raw matrix.
+const TAU_FRAC = collect(0.0:0.05:0.50)
+const PSI_FRAC = collect(0.0:0.05:0.50)
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000
@@ -160,51 +163,81 @@ i_best_zg, j_best_zg = Tuple(argmax(dWtot_zg))
         TAU_FRAC[i_best_zg], PSI_FRAC[j_best_zg],
         dWtot_zg[i_best_zg,j_best_zg], dWtot_pct_zg[i_best_zg,j_best_zg])
 
-# ── Heatmap of ΔΣW % under γ = γ̂, with both planner argmaxes overlaid ─────
-plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct;
-              xlabel = "Entry-subsidy fraction ψ / φ̂",
-              ylabel = "Innovation-subsidy fraction τ / κ̂",
-              title  = "ΔΣW (% of baseline): joint region-3 subsidies (γ = γ̂)",
-              c = :balance, clims = (-maximum(abs, dWtot_pct), maximum(abs, dWtot_pct)),
-              colorbar_title = "ΔΣW %",
-              size = (720, 540),
-              titlefontsize = 12, guidefontsize = 10,
-              tickfontsize = 9,
-              left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
-              right_margin = 7Plots.mm, top_margin = 3Plots.mm)
-for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
-    annotate!(plt, fP, fT, text(@sprintf("%+.2f", dWtot_pct[i,j]), 8, :black))
+# Visual smoothing: a 3×3 box average tames per-cell MC noise without
+# moving the argmax cell (computed above from the raw matrix). Used
+# only for the figure; macros and the booktabs table use raw data.
+function box_smooth(M::Matrix{Float64})
+    n, m = size(M)
+    S = similar(M)
+    @inbounds for i in 1:n, j in 1:m
+        s = 0.0; c = 0
+        for di in -1:1, dj in -1:1
+            ii = i + di; jj = j + dj
+            (ii < 1 || ii > n || jj < 1 || jj > m) && continue
+            s += M[ii, jj]; c += 1
+        end
+        S[i, j] = s / c
+    end
+    return S
 end
+
+# ── Heatmap of ΔΣW % under γ = γ̂, with both planner argmaxes overlaid ─────
+dWtot_pct_smooth = box_smooth(dWtot_pct)
+hmax = maximum(abs, dWtot_pct_smooth)
+plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct_smooth;
+              xlabel = "Entry-subsidy fraction  ψ / φ̂",
+              ylabel = "Innovation-subsidy fraction  τ / κ̂",
+              title  = "Aggregate welfare change ΔΣW (% of baseline)",
+              c = cgrad(:RdBu, rev = true),
+              clims = (-hmax, hmax),
+              colorbar_title = " ΔΣW (%)",
+              size = (760, 560),
+              dpi = 200,
+              titlefontsize = 13, guidefontsize = 11,
+              tickfontsize = 10, colorbar_titlefontsize = 11,
+              xticks = 0.0:0.10:0.50, yticks = 0.0:0.10:0.50,
+              framestyle = :box,
+              left_margin = 6Plots.mm, bottom_margin = 6Plots.mm,
+              right_margin = 9Plots.mm, top_margin = 4Plots.mm)
 scatter!(plt, [PSI_FRAC[j_best]], [TAU_FRAC[i_best]];
-         marker = :star5, ms = 14, color = :gold, label = "argmax (γ = γ̂)",
-         legend = :topleft)
+         marker = :star5, ms = 14, color = :gold,
+         markerstrokecolor = :black, markerstrokewidth = 1.5,
+         label = "Planner argmax  (γ = γ̂)",
+         legend = :topright, foreground_color_legend = nothing,
+         background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
 scatter!(plt, [PSI_FRAC[j_best_zg]], [TAU_FRAC[i_best_zg]];
-         marker = :diamond, ms = 12, color = :white,
-         markerstrokecolor = :black, markerstrokewidth = 2,
-         label = "argmax (γ = 0)")
+         marker = :circle, ms = 9, color = :black,
+         markerstrokecolor = :white, markerstrokewidth = 1.5,
+         label = "Planner argmax  (γ = 0)")
 fig_path = joinpath(OUT_FIG, "joint_subsidy_heatmap.pdf")
 savefig(plt, fig_path)
 println("\nSaved figure: $fig_path")
 
 # ── Heatmap of ΔW₃ % (treated region) ─────────────────────────────────────
 i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
-plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct;
-               xlabel = "Entry-subsidy fraction ψ / φ̂",
-               ylabel = "Innovation-subsidy fraction τ / κ̂",
-               title  = "ΔW₃ (% of baseline): joint region-3 subsidies",
-               c = :balance, clims = (-maximum(abs, dW_r3_pct), maximum(abs, dW_r3_pct)),
-               colorbar_title = "ΔW₃ %",
-               size = (720, 540),
-               titlefontsize = 12, guidefontsize = 10,
-               tickfontsize = 9,
-               left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
-               right_margin = 7Plots.mm, top_margin = 3Plots.mm)
-for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
-    annotate!(plt3, fP, fT, text(@sprintf("%+.2f", dW_r3_pct[i,j]), 8, :black))
-end
+dW_r3_pct_smooth = box_smooth(dW_r3_pct)
+hmax_r3 = maximum(abs, dW_r3_pct_smooth)
+plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct_smooth;
+               xlabel = "Entry-subsidy fraction  ψ / φ̂",
+               ylabel = "Innovation-subsidy fraction  τ / κ̂",
+               title  = "Region-3 welfare change ΔW₃ (% of baseline)",
+               c = cgrad(:RdBu, rev = true),
+               clims = (-hmax_r3, hmax_r3),
+               colorbar_title = " ΔW₃ (%)",
+               size = (760, 560),
+               dpi = 200,
+               titlefontsize = 13, guidefontsize = 11,
+               tickfontsize = 10, colorbar_titlefontsize = 11,
+               xticks = 0.0:0.10:0.50, yticks = 0.0:0.10:0.50,
+               framestyle = :box,
+               left_margin = 6Plots.mm, bottom_margin = 6Plots.mm,
+               right_margin = 9Plots.mm, top_margin = 4Plots.mm)
 scatter!(plt3, [PSI_FRAC[j_best_r3]], [TAU_FRAC[i_best_r3]];
-         marker = :star5, ms = 12, color = :gold, label = "argmax",
-         legend = :topleft)
+         marker = :star5, ms = 14, color = :gold,
+         markerstrokecolor = :black, markerstrokewidth = 1.5,
+         label = "Region-3 argmax",
+         legend = :topright, foreground_color_legend = nothing,
+         background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
 fig_path_r3 = joinpath(OUT_FIG, "joint_subsidy_heatmap_r3.pdf")
 savefig(plt3, fig_path_r3)
 println("Saved figure: $fig_path_r3")
