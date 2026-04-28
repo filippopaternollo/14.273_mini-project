@@ -36,7 +36,7 @@ end
 
 """
     default_params(; gamma = 0.15, sigma = 0.5, rho = 0.5, N_max = 6,
-                     blocs = (1, 2, 3), kappa = 0.3, phi = 0.3,
+                     blocs = (1, 2, 3), kappa = 0.2, phi = 0.2,
                      subsidy = (0.0, 0.0, 0.0))
 
 Default plausible calibration.  `gamma` may be a scalar (applied to every
@@ -67,8 +67,8 @@ function default_params(; gamma = 0.15,
                           rho::Float64 = 0.5,
                           N_max::Int = 6,
                           blocs::NTuple{R,Int} = (1, 2, 3),
-                          kappa::Float64 = 0.3,
-                          phi::Float64 = 0.3,
+                          kappa::Float64 = 0.2,
+                          phi::Float64 = 0.2,
                           subsidy = (0.0, 0.0, 0.0),
                           entry_subsidy = (0.0, 0.0, 0.0))
     γ = gamma isa Number ? ntuple(_ -> Float64(gamma), R) :
