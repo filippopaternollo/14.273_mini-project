@@ -731,48 +731,89 @@ strictly preferred policy (the corner) and the planner has a strictly
 different one (the interior). The joint sweep below sharpens this
 contrast on the two-instrument grid.\\
 
-\subsection{Joint subsidy grid: planner vs.\ region 3}
+\subsection{Joint subsidy grid}
+\label{sec:joint_subsidy}
 
 A joint sweep over $(\tau, \psi)$ on the $\JointSubsidyGridLengthTau
-\times \JointSubsidyGridLengthPsi$ grid lets the planner trade the
-two instruments off against each other and makes the planner-vs-region
-gap explicit. The aggregate-welfare argmax is the interior cell
-$(\tau/\widehat{\kappa}, \psi/\widehat{\phi}) =
-(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$, with
-$\Delta\Sigma W = \JointSubsidyOptDWPct\,\%$ and per-region splits
-($\JointSubsidyOptDWPctROne\,\%$, $\JointSubsidyOptDWPctRTwo\,\%$,
-$\JointSubsidyOptDWPctRThree\,\%$). The mix tilts toward entry: at the
-planner's interior optimum, the entry-subsidy fraction
-($\JointSubsidyOptPsiFrac$) is twice the innovation-subsidy fraction
-($\JointSubsidyOptTauFrac$), consistent with the cleaner pass-through
-on the entry margin. Region~3 alone, by contrast, prefers the corner
-$(\JointSubsidyROptTauFrac, \JointSubsidyROptPsiFrac)$, where its own
-welfare gains $\JointSubsidyROptDWPctRThree\,\%$ but regions~1 and~2
-together lose enough that the planner is unwilling to go there.
-Figure~\ref{fig:joint_subsidy_heatmap} shows the aggregate heatmap;
-the gold star marks the planner's argmax, while the south-east corner
-is region~3's preferred cell.
+\times \JointSubsidyGridLengthPsi$ grid lets the planner trade the two
+instruments off against each other. We use it to make three points,
+which the heatmap of Figure~\ref{fig:joint_subsidy_heatmap}
+summarises. The two markers on the heatmap correspond to the
+planner's argmax under the two calibrations: the gold star is the
+agglomeration calibration $\gamma = \widehat{\gamma}$; the white
+diamond is the no-agglomeration counterfactual $\gamma = 0$.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/joint_subsidy_heatmap.pdf}
+  \includegraphics[width=0.78\textwidth]{../output/figures/joint_subsidy_heatmap.pdf}
   \caption{Aggregate welfare change $\Delta\Sigma W$ (\% of baseline)
            on the joint $(\tau/\widehat{\kappa}, \psi/\widehat{\phi})$
-           grid. The planner's argmax (gold star) is the interior cell
-           $(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$; the
-           south-east corner is region~3's preferred cell, where its
-           own welfare rises by $\JointSubsidyROptDWPctRThree\,\%$ but
-           aggregate welfare is back at zero.}
+           grid, evaluated at $\gamma = \widehat{\gamma}$. The
+           \emph{gold star} marks the planner's argmax under
+           $\gamma = \widehat{\gamma}$:
+           $(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$, with
+           $\Delta\Sigma W = \JointSubsidyOptDWPct\,\%$. The
+           \emph{white diamond} marks the planner's argmax in the
+           same problem with $\gamma$ set to zero:
+           $(\JointSubsidyNoAgglomOptTauFrac,
+           \JointSubsidyNoAgglomOptPsiFrac)$. Region~3's own-welfare
+           argmax is the south-east corner of the grid
+           $(\JointSubsidyROptTauFrac, \JointSubsidyROptPsiFrac)$,
+           where $\Delta W_3 = \JointSubsidyROptDWPctRThree\,\%$.}
   \label{fig:joint_subsidy_heatmap}
 \end{figure}
 
-The basic message is that the cross-region Cournot externality drives
-a wedge between region~3's preferred subsidy and the planner's: the
-former wants to maximise both subsidies, the latter wants only modest
-amounts of each. The wedge shrinks if the spillover specification is
-expanded to internalise more of the cross-region effect (e.g.\ under
-the alliance variant of Appendix~\ref{sec:merger}). Full details,
-including the K-stability diagnostic, are in
+\paragraph{(1) The planner's optimal subsidy is asymmetric: more entry
+than innovation.} At the agglomeration calibration the planner picks
+$(\tau/\widehat{\kappa}, \psi/\widehat{\phi}) =
+(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$, with the
+entry-subsidy fraction twice the innovation-subsidy fraction. The
+mechanism is the cannibalization wedge of Igami's
+``innovator's dilemma'': an old-tech incumbent who switches to
+``both'' adds new-tech output but partly cannibalises its own old-tech
+revenue, so it produces \emph{less} new-tech quantity than a fresh
+entrant of equivalent type. A unit of entry subsidy therefore moves
+the new-tech market further than a unit of innovation subsidy. The
+planner internalises this and tilts the mix toward entry; the
+own-region welfare-per-corner numbers in
+Sections~\ref{sec:subsidy} and~\ref{sec:entry_subsidy} confirm this
+($\EntrySubsidyMaxDWPctRThree\,\%$ for entry vs.\
+$\SubsidyMaxDWPctRThree\,\%$ for innovation at $\psi/\widehat{\phi} =
+\tau/\widehat{\kappa} = 0.5$).
+
+\paragraph{(2) Agglomeration is the externality the planner is
+correcting.} Under $\gamma = \widehat{\gamma} = \SubsidyGammaHat$, the
+local agglomeration spillover is a positive externality: adding an
+innovator (or entrant, since both end up using new tech) lowers next
+period's $c_{n,r}$ for every other new-tech firm in region~$r$. The
+firm internalises only its own period-2 cost reduction; the rest of
+the cluster gets it for free. A subsidy that nudges $P(\mathrm{innov})$
+or $P(\mathrm{enter})$ above the laissez-faire level helps close the
+gap. With $\gamma$ shut off, that channel disappears and only the
+\emph{negative} cross-region Cournot externality remains. The planner
+then prefers \emph{no} subsidy at all: the no-agglomeration argmax is
+the corner $(\tau/\widehat{\kappa}, \psi/\widehat{\phi}) =
+(\JointSubsidyNoAgglomOptTauFrac, \JointSubsidyNoAgglomOptPsiFrac)$,
+with $\Delta\Sigma W = \JointSubsidyNoAgglomOptDWPct\,\%$, and every
+positive cell in the no-agglomeration grid is welfare-decreasing
+(largest cell $\JointSubsidyNoAgglomBothMaxDWPct\,\%$). The size of
+the optimal subsidy is therefore proportional to the strength of the
+agglomeration externality, not a robust feature of the model.
+
+\paragraph{(3) A unilateral region-3 government over-subsidises.}
+Region~3's own welfare is monotone non-decreasing across the entire
+$(\tau, \psi)$ grid: it picks the corner
+$(\JointSubsidyROptTauFrac, \JointSubsidyROptPsiFrac)$, where
+$\Delta W_3 = \JointSubsidyROptDWPctRThree\,\%$. The planner stops far
+short of the corner because the planner internalises the
+producer-surplus losses imposed on regions~1 and~2 by cheaper
+region-3 output and region~3 does not. The wedge between region~3's
+preferred policy and the planner's is exactly the cross-region
+Cournot terms-of-trade externality. It would shrink if the spillover
+specification pooled region~3 with another region, since the planner
+would then internalise more of the spillover gain to region~3's
+partner (cf.\ the alliance variant of Appendix~\ref{sec:merger}).
+Full details, including the K-stability diagnostic, are in
 \texttt{notes/entry\_subsidy\_counterfactual.md}.
 
 \section{Next Steps}

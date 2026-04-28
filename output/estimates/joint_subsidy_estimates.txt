@@ -22,3 +22,14 @@
 \newcommand{\JointSubsidyROptTauFrac}{0.50}
 \newcommand{\JointSubsidyROptPsiFrac}{0.50}
 \newcommand{\JointSubsidyROptDWPctRThree}{+0.27}
+% No-agglomeration counterfactual: γ = (0, 0, 0).
+\newcommand{\JointSubsidyNoAgglomOptTauFrac}{0.00}
+\newcommand{\JointSubsidyNoAgglomOptPsiFrac}{0.00}
+\newcommand{\JointSubsidyNoAgglomOptTau}{0.0000}
+\newcommand{\JointSubsidyNoAgglomOptPsi}{0.0000}
+\newcommand{\JointSubsidyNoAgglomOptDWTotal}{+0.0000}
+\newcommand{\JointSubsidyNoAgglomOptDWPct}{+0.00}
+% Corner cells under γ = 0
+\newcommand{\JointSubsidyNoAgglomInnovOnlyMaxDWPct}{-0.06}
+\newcommand{\JointSubsidyNoAgglomEntryOnlyMaxDWPct}{-0.03}
+\newcommand{\JointSubsidyNoAgglomBothMaxDWPct}{-0.09}
