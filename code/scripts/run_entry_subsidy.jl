@@ -28,8 +28,10 @@ Outputs:
 using Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
 
-include(joinpath(@__DIR__, "../src/MiniProject.jl"))
-using .MiniProject
+if !isdefined(Main, :MiniProject)
+    include(joinpath(@__DIR__, "../src/MiniProject.jl"))
+end
+import .MiniProject: default_params, expected_welfare_mc, R
 using Plots, Printf, Random
 
 # ── Output paths ────────────────────────────────────────────────────────────
@@ -65,8 +67,8 @@ const N_MARKETS = 5000
 const SEED      = 20260424
 
 # ── Baseline parameters ─────────────────────────────────────────────────────
-p_base = default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
-                          entry_subsidy = (0.0, 0.0, 0.0))
+p_base = MiniProject.default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
+                                      entry_subsidy = (0.0, 0.0, 0.0))
 
 @printf("=== Region-3 entry subsidy: grid sweep ===\n")
 @printf("  Calibration: κ̂ = %.4f,  φ̂ = %.4f,  γ̂ = (%.4f, %.4f, %.4f)\n",
@@ -103,8 +105,8 @@ grid_outlay      = Float64[]
 
 for (i, frac) in enumerate(SUBSIDY_GRID_FRAC)
     ψ_g = frac * PHI_HAT
-    p_g = default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
-                           entry_subsidy = (0.0, 0.0, ψ_g))
+    p_g = MiniProject.default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
+                                   entry_subsidy = (0.0, 0.0, ψ_g))
     w_g = expected_welfare_mc(p_g; n_markets = N_MARKETS, seed = SEED)
     w_grid[i] = w_g
     dW    = ntuple(r -> w_g.welfare_by_region[r] - w_base.welfare_by_region[r], R)
@@ -132,8 +134,8 @@ i_best = argmax(grid_dWtot)
 # ── K-stability at the largest ψ ───────────────────────────────────────────
 i_max = lastindex(SUBSIDY_GRID_FRAC)
 ψ_max = SUBSIDY_GRID_FRAC[i_max] * PHI_HAT
-p_max = default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
-                         entry_subsidy = (0.0, 0.0, ψ_max))
+p_max = MiniProject.default_params(; gamma = GAMMA_HAT, kappa = KAPPA_HAT, phi = PHI_HAT,
+                                     entry_subsidy = (0.0, 0.0, ψ_max))
 
 println("\n=== K-stability at ψ/φ̂ = $(SUBSIDY_GRID_FRAC[i_max]) (CRN) ===")
 @printf("  %5s | %10s %10s %10s | %10s %10s %10s | %10s\n",
@@ -181,6 +183,36 @@ plot!(plt_enter, SUBSIDY_GRID_FRAC, grid_enter_r3;
 fig_enter_path = joinpath(OUT_FIG, "entry_subsidy_entry.pdf")
 savefig(plt_enter, fig_enter_path)
 println("\nSaved figure: $fig_enter_path")
+
+
+# ── Plot 1b: P(innov | old, r) vs ψ  [cross-effect on innovation] ────────────
+grid_innov_r1_cross = [w_grid[i].innov_rate_by_region[1] for i in eachindex(SUBSIDY_GRID_FRAC)]
+grid_innov_r2_cross = [w_grid[i].innov_rate_by_region[2] for i in eachindex(SUBSIDY_GRID_FRAC)]
+grid_innov_r3_cross = [w_grid[i].innov_rate_by_region[3] for i in eachindex(SUBSIDY_GRID_FRAC)]
+
+plt_innov_cross = plot(SUBSIDY_GRID_FRAC, grid_innov_r1_cross;
+                 lw = 2.2, marker = :utriangle, ms = 5, color = COL_R1,
+                 label = "Region 1",
+                 xlabel = "Entry-subsidy fraction ψ / φ̂",
+                 ylabel = "P(innovate | old, r)",
+                 title  = "Innovation rate by region across the entry-subsidy grid",
+                 legend = :outerbottom, legend_columns = 3,
+                 foreground_color_legend = nothing,
+                 background_color_legend = nothing,
+                 framestyle = :semi, grid = :y, gridalpha = 0.25,
+                 size = (720, 460),
+                 titlefontsize = 12, guidefontsize = 10,
+                 tickfontsize = 9, legendfontsize = 9,
+                 left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
+                 top_margin = 3Plots.mm)
+plot!(plt_innov_cross, SUBSIDY_GRID_FRAC, grid_innov_r2_cross;
+      lw = 2.2, marker = :diamond, ms = 5, color = COL_R2, label = "Region 2")
+plot!(plt_innov_cross, SUBSIDY_GRID_FRAC, grid_innov_r3_cross;
+      lw = 2.2, marker = :rect, ms = 5, color = COL_R3, label = "Region 3 (treated)")
+fig_innov_cross_path = joinpath(OUT_FIG, "entry_subsidy_innov_cross.pdf")
+savefig(plt_innov_cross, fig_innov_cross_path)
+println("Saved figure: $fig_innov_cross_path")
+
 
 # ── Plot 2: ΔΣW and ΔW_r vs ψ ─────────────────────────────────────────────
 plt_grid = plot(SUBSIDY_GRID_FRAC, grid_dWtot;

@@ -189,6 +189,36 @@ fig_innov_path = joinpath(OUT_FIG, "subsidy_innovation.pdf")
 savefig(plt_innov, fig_innov_path)
 println("\nSaved figure: $fig_innov_path")
 
+# ── Plot 1b: P(enter | pe, r) vs τ  [cross-effect on entry] ─────────────────
+grid_enter_r1_cross = [w_grid[i].enter_rate_by_region[1] for i in eachindex(SUBSIDY_GRID_FRAC)]
+grid_enter_r2_cross = [w_grid[i].enter_rate_by_region[2] for i in eachindex(SUBSIDY_GRID_FRAC)]
+grid_enter_r3_cross = [w_grid[i].enter_rate_by_region[3] for i in eachindex(SUBSIDY_GRID_FRAC)]
+
+plt_entry_cross = plot(SUBSIDY_GRID_FRAC, grid_enter_r1_cross;
+                 lw = 2.2, marker = :utriangle, ms = 5, color = COL_R1,
+                 label = "Region 1",
+                 xlabel = "Innovation-subsidy fraction τ / κ̂",
+                 ylabel = "P(enter | pe, r)",
+                 title  = "Entry rate by region across the innovation-subsidy grid",
+                 legend = :outerbottom, legend_columns = 3,
+                 foreground_color_legend = nothing,
+                 background_color_legend = nothing,
+                 framestyle = :semi, grid = :y, gridalpha = 0.25,
+                 size = (720, 460),
+                 titlefontsize = 12, guidefontsize = 10,
+                 tickfontsize = 9, legendfontsize = 9,
+                 left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
+                 top_margin = 3Plots.mm)
+plot!(plt_entry_cross, SUBSIDY_GRID_FRAC, grid_enter_r2_cross;
+      lw = 2.2, marker = :diamond, ms = 5, color = COL_R2, label = "Region 2")
+plot!(plt_entry_cross, SUBSIDY_GRID_FRAC, grid_enter_r3_cross;
+      lw = 2.2, marker = :rect, ms = 5, color = COL_R3, label = "Region 3 (treated)")
+fig_entry_cross_path = joinpath(OUT_FIG, "subsidy_innovation_entry_cross.pdf")
+savefig(plt_entry_cross, fig_entry_cross_path)
+println("Saved figure: $fig_entry_cross_path")
+
+
+
 # ── Plot 2: ΔΣW and ΔW_r vs τ ──────────────────────────────────────────────
 plt_grid = plot(SUBSIDY_GRID_FRAC, grid_dWtot;
                 lw = 2.5, marker = :circle, ms = 5,
