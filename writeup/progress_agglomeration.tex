@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath, amssymb}
 \usepackage{booktabs}
+\usepackage{threeparttable}
 \usepackage{caption}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -26,6 +27,7 @@
 \input{../output/estimates/entry_subsidy_estimates.txt}
 \input{../output/estimates/joint_subsidy_estimates.txt}
 \input{../output/estimates/misspec_estimates.txt}
+\input{../output/estimates/summary_stats.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -283,6 +285,36 @@ For every firm in every period we record region, firm type, the two Cournot
 quantities, and realised profit. For period~1 we additionally record the
 discrete action. The structural parameters used to draw the data are
 deliberately \emph{not} stored in the CSV.
+
+\subsection{Summary statistics}
+
+Table~\ref{tab:summary_stats} reports means across the \SummaryNMarkets\
+simulated markets. Innovation rates (the share of period-1 old firms that
+choose \texttt{innovate}) are roughly symmetric across regions at
+\InnovRateTotal\ on average, and entry rates (the share of potential
+entrants that choose \texttt{enter}) average \EntryRateTotal. Entry
+exceeds innovation by about \EntryInnovGapPP\ percentage points,
+reflecting the cannibalization wedge: incumbents that adopt face a
+within-firm conflict that pure entrants do not.\\
+
+\begin{table}[ht]
+  \centering
+  \begin{threeparttable}
+    \caption{Summary statistics --- simulated panel (\SummaryNMarkets\ markets)}
+    \medskip
+    \label{tab:summary_stats}
+    \input{../output/tables/summary_stats.tex}
+    \begin{tablenotes}[flushleft]
+      \footnotesize
+      \item[] \textit{Notes:} Means across \SummaryNMarkets\ markets
+        simulated at the default calibration ($\gamma = 0.15$,
+        $\kappa = 0.20$, $\phi = 0.20$, $\sigma = 0.50$, $\rho = 0.50$),
+        seed \texttt{20260414}. Innovation (entry) rate $=$ share of
+        old (potential-entrant) firms choosing \texttt{innovate}
+        (\texttt{enter}).
+    \end{tablenotes}
+  \end{threeparttable}
+\end{table}
 
 \subsection{Two-step estimator}
 
