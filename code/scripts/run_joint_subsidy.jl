@@ -29,14 +29,15 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 
 include(joinpath(@__DIR__, "../src/MiniProject.jl"))
 using .MiniProject
-using Plots, Printf, Random
+using Printf, Random, CSV, DataFrames
 
 # ── Output paths ────────────────────────────────────────────────────────────
 const OUTPUT_DIR = joinpath(@__DIR__, "../../output")
 const OUT_TAB    = joinpath(OUTPUT_DIR, "tables")
 const OUT_FIG    = joinpath(OUTPUT_DIR, "figures")
 const OUT_EST    = joinpath(OUTPUT_DIR, "estimates")
-mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST)
+const OUT_CACHE  = joinpath(OUTPUT_DIR, "cache")
+mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST); mkpath(OUT_CACHE)
 
 # ── Calibration: estimated parameters ───────────────────────────────────────
 const EST_PATH = joinpath(OUTPUT_DIR, "estimates", "estimation.txt")
@@ -160,66 +161,35 @@ i_best_zg, j_best_zg = Tuple(argmax(dWtot_zg))
         TAU_FRAC[i_best_zg], PSI_FRAC[j_best_zg],
         dWtot_zg[i_best_zg,j_best_zg], dWtot_pct_zg[i_best_zg,j_best_zg])
 
-# ── Heatmap of ΔΣW % under γ = γ̂, with both planner argmaxes overlaid ─────
-# Sequential colormap (light → dark blue): white at 0, darker = more
-# positive ΔΣW. All cells are non-negative under γ = γ̂.
-hmax = maximum(dWtot_pct)
-plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct;
-              xlabel = "Entry-subsidy fraction  ψ / φ̂",
-              ylabel = "Innovation-subsidy fraction  τ / κ̂",
-              title  = "Aggregate welfare change ΔΣW (% of baseline)",
-              c = cgrad(:Blues),
-              clims = (0.0, hmax),
-              colorbar_title = " ΔΣW (%)",
-              size = (760, 560),
-              dpi = 200,
-              titlefontsize = 13, guidefontsize = 11,
-              tickfontsize = 10, colorbar_titlefontsize = 11,
-              xticks = 0.0:0.10:0.50, yticks = 0.0:0.10:0.50,
-              framestyle = :box,
-              left_margin = 6Plots.mm, bottom_margin = 6Plots.mm,
-              right_margin = 9Plots.mm, top_margin = 4Plots.mm)
-scatter!(plt, [PSI_FRAC[j_best]], [TAU_FRAC[i_best]];
-         marker = :star5, ms = 14, color = :gold,
-         markerstrokecolor = :black, markerstrokewidth = 1.5,
-         label = "Planner argmax  (γ = γ̂)",
-         legend = :topright, foreground_color_legend = nothing,
-         background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
-scatter!(plt, [PSI_FRAC[j_best_zg]], [TAU_FRAC[i_best_zg]];
-         marker = :circle, ms = 9, color = :black,
-         markerstrokecolor = :white, markerstrokewidth = 1.5,
-         label = "Planner argmax  (γ = 0)")
-fig_path = joinpath(OUT_FIG, "joint_subsidy_heatmap.pdf")
-savefig(plt, fig_path)
-println("\nSaved figure: $fig_path")
-
-# ── Heatmap of ΔW₃ % (treated region) ─────────────────────────────────────
 i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
-hmax_r3 = maximum(dW_r3_pct)
-plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct;
-               xlabel = "Entry-subsidy fraction  ψ / φ̂",
-               ylabel = "Innovation-subsidy fraction  τ / κ̂",
-               title  = "Region-3 welfare change ΔW₃ (% of baseline)",
-               c = cgrad(:Blues),
-               clims = (0.0, hmax_r3),
-               colorbar_title = " ΔW₃ (%)",
-               size = (760, 560),
-               dpi = 200,
-               titlefontsize = 13, guidefontsize = 11,
-               tickfontsize = 10, colorbar_titlefontsize = 11,
-               xticks = 0.0:0.10:0.50, yticks = 0.0:0.10:0.50,
-               framestyle = :box,
-               left_margin = 6Plots.mm, bottom_margin = 6Plots.mm,
-               right_margin = 9Plots.mm, top_margin = 4Plots.mm)
-scatter!(plt3, [PSI_FRAC[j_best_r3]], [TAU_FRAC[i_best_r3]];
-         marker = :star5, ms = 14, color = :gold,
-         markerstrokecolor = :black, markerstrokewidth = 1.5,
-         label = "Region-3 argmax",
-         legend = :topright, foreground_color_legend = nothing,
-         background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
-fig_path_r3 = joinpath(OUT_FIG, "joint_subsidy_heatmap_r3.pdf")
-savefig(plt3, fig_path_r3)
-println("Saved figure: $fig_path_r3")
+
+# ── Cache grid data to CSV (consumed by plot_joint_subsidy.jl) ─────────────
+df_hat = DataFrame(tau_frac     = Float64[],
+                   psi_frac     = Float64[],
+                   dW_total     = Float64[],
+                   dW_total_pct = Float64[],
+                   dW_r1_pct    = Float64[],
+                   dW_r2_pct    = Float64[],
+                   dW_r3_pct    = Float64[])
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    push!(df_hat, (fT, fP, dWtot[i,j], dWtot_pct[i,j],
+                   dW_r1_pct[i,j], dW_r2_pct[i,j], dW_r3_pct[i,j]))
+end
+cache_path_hat = joinpath(OUT_CACHE, "joint_subsidy_gamma_hat.csv")
+CSV.write(cache_path_hat, df_hat)
+println("\nSaved cache: $cache_path_hat")
+
+df_zg = DataFrame(tau_frac     = Float64[],
+                  psi_frac     = Float64[],
+                  dW_total     = Float64[],
+                  dW_total_pct = Float64[],
+                  dW_r3_pct    = Float64[])
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    push!(df_zg, (fT, fP, dWtot_zg[i,j], dWtot_pct_zg[i,j], dW_r3_pct_zg[i,j]))
+end
+cache_path_zg = joinpath(OUT_CACHE, "joint_subsidy_gamma_zero.csv")
+CSV.write(cache_path_zg, df_zg)
+println("Saved cache: $cache_path_zg")
 
 # ── Table: ΔΣW % grid ──────────────────────────────────────────────────────
 sgn2(x) = x ≥ 0 ? @sprintf("%+.2f", x) : @sprintf("%.2f", x)
@@ -288,5 +258,8 @@ macros *= """% No-agglomeration counterfactual: γ = (0, 0, 0).
 macro_path = joinpath(OUT_EST, "joint_subsidy_estimates.txt")
 open(macro_path, "w") do io; write(io, macros); end
 println("Saved macros: $macro_path")
+
+# ── Render heatmaps from cached CSVs ───────────────────────────────────────
+include(joinpath(@__DIR__, "plot_joint_subsidy.jl"))
 
 println("\nDone.")
