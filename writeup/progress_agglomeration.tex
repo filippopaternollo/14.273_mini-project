@@ -262,7 +262,7 @@ symmetric $s_0$ with uniform $\gamma_r$, the three regions' CCPs differ by
 at most $10^{-3}$. Region~1 commits without observing anyone, while
 region~3 best-responds to the realised history. The gap is well below the
 magnitude of every counterfactual difference reported in
-Section~\ref{sec:merger}.
+Appendix~\ref{sec:merger}.
 
 \section{Estimation on Simulated Data}
 \label{sec:estimation}
@@ -369,85 +369,6 @@ supports. The period-1 action log-likelihood at the optimum is $\LogLikHat$.\\
     Step~1 identifies $\gamma$ from Cournot quantities; Step~2 estimates
     $(\kappa, \phi)$ by period-1 action MLE conditional on $\widehat{\gamma}$.
     Standard errors (BHHH) are reported only for the MLE step.}
-\end{table}
-
-\subsection{Strawman: a misspecified model without agglomeration}
-\label{sec:misspec}
-
-What if an analyst sees the same Cournot data but never considers
-agglomeration? They attribute cross-region cost differences to
-exogenous regional fundamentals, factor prices and geography, and
-estimate a region intercept on new-tech marginal cost while imposing
-$\gamma \equiv 0$. The misspecified cost function is
-\[
-   c_{n,r}^{\text{mis}} = c_{n0} + \delta_r,
-\]
-state-independent within a region. Step~1 NLS on the same Cournot
-data pins $\widehat{\delta}_r$ near
-$-\widehat{\gamma}_r \cdot \mathbb{E}[n_b^r + n_n^r]$ and leaves a
-residual SSR of $\MisspecNlsSsr$, against essentially zero for the
-correctly-specified Step~1. Step~2 MLE on period-1 actions then
-yields $\widetilde{\kappa} = \MisspecKappa$ and $\widetilde{\phi} =
-\MisspecPhi$, both within a few percentage points of $\widehat{\kappa}$
-and $\widehat{\phi}$.\\
-
-The misspecified model fits action margins by construction but
-mispredicts heterogeneity and comparative statics.
-Table~\ref{tab:misspec} compares the two models on three blocks of
-moments evaluated at the period-0 states observed in the data. The
-innovation-rate panel is essentially a tie: both models match the
-average $P(\text{innov} \mid \text{old})$ and
-$P(\text{enter} \mid \text{pe})$ to four decimals, so the
-innovator's-dilemma gap is identical. This is a feature of MLE.
-Action frequencies are pinned at the realized states. The Lerner
-panel and the comparative-static panel are where the strawman breaks
-down.\\
-
-\noindent \textit{Markup heterogeneity.}
-On the new-generation side the misspecified model under-predicts both
-the level and the dispersion of markups: mean Lerner index
-$\MisspecLernerNew$ versus $\TrueLernerNew$, standard deviation
-$\MisspecLernerNewSd$ versus $\TrueLernerNewSd$. By assumption the
-misspecified marginal cost does not move with peer density, so
-realized markups do not either. The true model captures the
-cross-state covariance between cost and quantity that the
-misspecified one collapses.\\
-
-\noindent \textit{Comparative-static prediction.}
-A counterfactual $+1$ \texttt{both}-firm shock to region~1 produces
-$\Delta P(\text{innov} \mid \text{old}, r=1) = \MisspecDpioROne$ in
-the misspecified model and $\TrueDpioROne$ in the true model
-(firm-weighted across the period-0 states where the perturbation is
-feasible). The drop is roughly three times larger under
-misspecification. A misspecified analyst would conclude that peer
-entry sharply discourages further innovation. The true story is
-much milder, because the cost-reduction channel partially offsets
-the negative price effect of an additional new-generation supplier.
-The gap between the two values is a one-number summary of the
-agglomeration externality the strawman is missing.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{Correct vs.\ misspecified model: estimates and predictions}
-  \medskip
-  \label{tab:misspec}
-  \input{../output/tables/misspec_comparison.tex}
-  \caption*{\footnotesize Notes: The misspecified model imposes
-    $\gamma \equiv 0$ and fits a region intercept $\delta_r$ on
-    new-tech marginal cost. Step~1 re-estimates
-    $(\delta_1, \delta_2, \delta_3)$ by NLS on observed Cournot
-    quantities; Step~2 re-estimates $(\kappa, \phi)$ by MLE on
-    period-1 actions, conditional on the misspecified Cournot
-    continuation values. Innovation-rate moments are firm-weighted
-    across (market, region) at the period-0 states observed in
-    \texttt{data/simulated\_data.csv}. Lerner indices $(P-MC)/P$ are
-    quantity-weighted within a market and equal-weighted across
-    markets, with the across-market standard deviation reported
-    after the slash. The comparative static
-    $\Delta P(\text{innov}\mid\text{old}, r=1)$ averages, firm-weighted
-    across markets, the response of the region-1 innovation rate to
-    adding one \texttt{both} firm in region~1; markets where the
-    perturbation would exceed $N_{\max}$ are dropped.}
 \end{table}
 
 \section{Counterfactual: Region-3 Innovation Subsidy}
@@ -1078,5 +999,87 @@ saturation that sets in at $\gamma \gtrsim 0.30$, so the model is in its
 responsive interior. Full details, including the K-stability diagnostic and
 the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
 \texttt{notes/merger\_counterfactual.md}.
+
+\section{Strawman: a misspecified model without agglomeration}
+\label{sec:misspec}
+
+This appendix records a strawman estimation exercise that did not
+deliver what we hoped. We re-estimated the model under the constraint
+$\gamma \equiv 0$, expecting the action-margin moments to diverge
+visibly from the truth. They do not. We retain the comparison because
+it documents the alternative we considered and because the static and
+comparative-static moments do show some smaller differences worth
+recording.\\
+
+The misspecified analyst attributes cross-region cost differences to
+exogenous regional fundamentals (factor prices, geography) and
+estimates a region intercept $\delta_r$ on new-tech marginal cost.
+The misspecified cost function is
+\[
+   c_{n,r}^{\text{mis}} = c_{n0} + \delta_r,
+\]
+state-independent within a region. Step~1 NLS on the same Cournot
+data pins $\widehat{\delta}_r$ near
+$-\widehat{\gamma}_r \cdot \mathbb{E}[n_b^r + n_n^r]$ and leaves a
+residual SSR of $\MisspecNlsSsr$, against essentially zero for the
+correctly-specified Step~1. Step~2 MLE on period-1 actions yields
+$\widetilde{\kappa} = \MisspecKappa$ and $\widetilde{\phi} =
+\MisspecPhi$, both within a few percentage points of
+$\widehat{\kappa}$ and $\widehat{\phi}$.\\
+
+Table~\ref{tab:misspec} reports the comparison. The innovation-rate
+panel is a tie. Both models match the average
+$P(\text{innov} \mid \text{old})$ and $P(\text{enter} \mid \text{pe})$
+to four decimals, so the innovator's-dilemma gap is identical. This is
+a feature of the estimation procedure: MLE pins action frequencies at
+the realized states, so any model whose Cournot intercept is fitted to
+the same data will reproduce the same period-1 CCPs at those states.
+This is also why we kept hoping for a sharper finding and did not
+get one.\\
+
+\noindent \textit{Markup heterogeneity.}
+On the new-generation side the misspecified model under-predicts both
+the level and the dispersion of markups: mean Lerner index
+$\MisspecLernerNew$ versus $\TrueLernerNew$, standard deviation
+$\MisspecLernerNewSd$ versus $\TrueLernerNewSd$. By assumption the
+misspecified marginal cost does not move with peer density, so realized
+markups do not either. The true model captures the cross-state
+covariance between cost and quantity that the misspecified one
+collapses.\\
+
+\noindent \textit{Comparative-static prediction.}
+A counterfactual $+1$ \texttt{both}-firm shock to region~1 produces
+$\Delta P(\text{innov} \mid \text{old}, r=1) = \MisspecDpioROne$ in
+the misspecified model and $\TrueDpioROne$ in the true model
+(firm-weighted across the period-0 states where the perturbation is
+feasible). The drop is roughly three times larger under
+misspecification, since the misspec model has no offsetting
+cost-reduction channel. The direction is the same in both models,
+and the absolute magnitude of the gap is small (under three percentage
+points), so the substantive interpretation is similar.\\
+
+\begin{table}[ht]
+  \centering
+  \caption{Correct vs.\ misspecified model: estimates and predictions}
+  \medskip
+  \label{tab:misspec}
+  \input{../output/tables/misspec_comparison.tex}
+  \caption*{\footnotesize Notes: The misspecified model imposes
+    $\gamma \equiv 0$ and fits a region intercept $\delta_r$ on
+    new-tech marginal cost. Step~1 re-estimates
+    $(\delta_1, \delta_2, \delta_3)$ by NLS on observed Cournot
+    quantities; Step~2 re-estimates $(\kappa, \phi)$ by MLE on
+    period-1 actions, conditional on the misspecified Cournot
+    continuation values. Innovation-rate moments are firm-weighted
+    across (market, region) at the period-0 states observed in
+    \texttt{data/simulated\_data.csv}. Lerner indices $(P-MC)/P$ are
+    quantity-weighted within a market and equal-weighted across
+    markets, with the across-market standard deviation reported
+    after the slash. The comparative static
+    $\Delta P(\text{innov}\mid\text{old}, r=1)$ averages, firm-weighted
+    across markets, the response of the region-1 innovation rate to
+    adding one \texttt{both} firm in region~1; markets where the
+    perturbation would exceed $N_{\max}$ are dropped.}
+\end{table}
 
 \end{document}
