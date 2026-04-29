@@ -46,7 +46,8 @@ println("\n=== Step 2: MLE for (κ, φ) given γ̂ (start (κ⁰,φ⁰) = (1.0, 
 println("\n=== BHHH standard errors at (κ̂, φ̂, γ̂) ===")
 p_hat = Params(p_base.A, p_base.B, p_base.M, p_base.c_o, p_base.c_n0,
                p_base.beta, κ̂, φ̂, p_base.sigma, γ̂, p_base.rho, p_base.N_max,
-               p_base.blocs, p_base.subsidy, p_base.entry_subsidy)
+               p_base.blocs, p_base.subsidy, p_base.entry_subsidy,
+               p_base.c_n0_offset)
 se = bhhh_se(markets, p_hat; step = 1e-4)
 @printf("  SE(κ) = %.4f    SE(φ) = %.4f\n", se.se_kappa, se.se_phi)
 

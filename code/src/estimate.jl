@@ -120,10 +120,11 @@ end
 # Helper: build a Params from a base + fresh (κ, φ, γ)
 # ---------------------------------------------------------------------------
 function _with_params(p::Params; kappa = p.kappa, phi = p.phi,
-                      gamma::NTuple{R,Float64} = p.gamma)
+                      gamma::NTuple{R,Float64} = p.gamma,
+                      c_n0_offset::NTuple{R,Float64} = p.c_n0_offset)
     return Params(p.A, p.B, p.M, p.c_o, p.c_n0, p.beta,
                   kappa, phi, p.sigma, gamma, p.rho, p.N_max,
-                  p.blocs, p.subsidy, p.entry_subsidy)
+                  p.blocs, p.subsidy, p.entry_subsidy, c_n0_offset)
 end
 
 # ---------------------------------------------------------------------------
