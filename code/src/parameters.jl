@@ -32,11 +32,12 @@ struct Params
     blocs::NTuple{R,Int}            # spillover-pool ids; default (1,2,3) → singletons
     subsidy::NTuple{R,Float64}      # per-region innovation subsidy τ_r ≥ 0; firm pays κ − τ_r
     entry_subsidy::NTuple{R,Float64} # per-region entry subsidy ψ_r ≥ 0; entrant pays φ − ψ_r
+    c_n0_offset::NTuple{R,Float64}  # per-region additive shifter on new-tech MC (state-independent); default zero
 end
 
 """
     default_params(; gamma = 0.15, sigma = 0.5, rho = 0.5, N_max = 6,
-                     blocs = (1, 2, 3), kappa = 0.3, phi = 0.2,
+                     blocs = (1, 2, 3), kappa = 0.2, phi = 0.2,
                      subsidy = (0.0, 0.0, 0.0))
 
 Default plausible calibration.  `gamma` may be a scalar (applied to every
@@ -67,16 +68,19 @@ function default_params(; gamma = 0.15,
                           rho::Float64 = 0.5,
                           N_max::Int = 6,
                           blocs::NTuple{R,Int} = (1, 2, 3),
-                          kappa::Float64 = 0.3,
+                          kappa::Float64 = 0.2,
                           phi::Float64 = 0.2,
                           subsidy = (0.0, 0.0, 0.0),
-                          entry_subsidy = (0.0, 0.0, 0.0))
+                          entry_subsidy = (0.0, 0.0, 0.0),
+                          c_n0_offset = (0.0, 0.0, 0.0))
     γ = gamma isa Number ? ntuple(_ -> Float64(gamma), R) :
                            NTuple{R,Float64}(gamma)
     τ = subsidy isa Number ? ntuple(_ -> Float64(subsidy), R) :
                              NTuple{R,Float64}(subsidy)
     ψ = entry_subsidy isa Number ? ntuple(_ -> Float64(entry_subsidy), R) :
                                    NTuple{R,Float64}(entry_subsidy)
+    δ = c_n0_offset isa Number ? ntuple(_ -> Float64(c_n0_offset), R) :
+                                 NTuple{R,Float64}(c_n0_offset)
     return Params(
         3.0,    # A
         1.0,    # B
@@ -92,6 +96,7 @@ function default_params(; gamma = 0.15,
         N_max,
         blocs,
         τ,      # per-region innovation subsidy
-        ψ       # per-region entry subsidy
+        ψ,      # per-region entry subsidy
+        δ       # per-region additive new-tech MC shifter
     )
 end

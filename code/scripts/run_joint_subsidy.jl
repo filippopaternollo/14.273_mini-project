@@ -8,10 +8,20 @@ sovereign-funding accounting used by `run_subsidy.jl` and
 `run_entry_subsidy.jl`. Common random numbers (same seed and per-market
 RNG) are used across baseline and every grid cell.
 
+We run two parallel sweeps to isolate the role of agglomeration:
+  (i) the headline calibration γ = γ̂; and
+  (ii) a counterfactual with γ = (0, 0, 0).
+The latter strips the local agglomeration spillover, leaving Cournot
+markup correction and cross-region competition as the only forces
+shaping the planner's optimal subsidy.
+
 Outputs:
-  - output/tables/joint_subsidy_dWpct.tex    (ΔΣW % grid as booktabs table)
-  - output/figures/joint_subsidy_heatmap.pdf (ΔΣW % heatmap)
-  - output/estimates/joint_subsidy_estimates.txt (LaTeX macros: optimum cell)
+  - output/tables/joint_subsidy_dWpct.tex            (ΔΣW % grid, γ = γ̂)
+  - output/figures/joint_subsidy_heatmap.pdf         (ΔΣW % heatmap, γ = γ̂,
+                                                      with both planner argmaxes
+                                                      under γ̂ and γ = 0)
+  - output/figures/joint_subsidy_heatmap_r3.pdf      (ΔW₃ % heatmap, γ = γ̂)
+  - output/estimates/joint_subsidy_estimates.txt     (LaTeX macros, both runs)
 """
 
 using Pkg
@@ -19,14 +29,15 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 
 include(joinpath(@__DIR__, "../src/MiniProject.jl"))
 using .MiniProject
-using Plots, Printf, Random
+using Printf, Random, CSV, DataFrames
 
 # ── Output paths ────────────────────────────────────────────────────────────
 const OUTPUT_DIR = joinpath(@__DIR__, "../../output")
 const OUT_TAB    = joinpath(OUTPUT_DIR, "tables")
 const OUT_FIG    = joinpath(OUTPUT_DIR, "figures")
 const OUT_EST    = joinpath(OUTPUT_DIR, "estimates")
-mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST)
+const OUT_CACHE  = joinpath(OUTPUT_DIR, "cache")
+mkpath(OUT_TAB); mkpath(OUT_FIG); mkpath(OUT_EST); mkpath(OUT_CACHE)
 
 # ── Calibration: estimated parameters ───────────────────────────────────────
 const EST_PATH = joinpath(OUTPUT_DIR, "estimates", "estimation.txt")
@@ -47,8 +58,8 @@ const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
                    read_macro(EST_PATH, "SpilloverThreeHat"))
 
 # ── Joint grid: (τ/κ̂, ψ/φ̂) ────────────────────────────────────────────────
-const TAU_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
-const PSI_FRAC = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50]
+const TAU_FRAC = collect(0.0:0.10:0.50)
+const PSI_FRAC = collect(0.0:0.10:0.50)
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000
@@ -107,50 +118,78 @@ i_best, j_best = Tuple(argmax(dWtot))
         TAU_FRAC[i_best], PSI_FRAC[j_best],
         dWtot[i_best,j_best], dWtot_pct[i_best,j_best])
 
-# ── Heatmap of ΔΣW % ───────────────────────────────────────────────────────
-plt = heatmap(PSI_FRAC, TAU_FRAC, dWtot_pct;
-              xlabel = "Entry-subsidy fraction ψ / φ̂",
-              ylabel = "Innovation-subsidy fraction τ / κ̂",
-              title  = "ΔΣW (% of baseline): joint region-3 subsidies",
-              c = :balance, clims = (-maximum(abs, dWtot_pct), maximum(abs, dWtot_pct)),
-              colorbar_title = "ΔΣW %",
-              size = (720, 540),
-              titlefontsize = 12, guidefontsize = 10,
-              tickfontsize = 9,
-              left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
-              right_margin = 7Plots.mm, top_margin = 3Plots.mm)
-for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
-    annotate!(plt, fP, fT, text(@sprintf("%+.2f", dWtot_pct[i,j]), 8, :black))
-end
-scatter!(plt, [PSI_FRAC[j_best]], [TAU_FRAC[i_best]];
-         marker = :star5, ms = 12, color = :gold, label = "argmax",
-         legend = :topleft)
-fig_path = joinpath(OUT_FIG, "joint_subsidy_heatmap.pdf")
-savefig(plt, fig_path)
-println("\nSaved figure: $fig_path")
+# ── Counterfactual sweep: γ = (0, 0, 0) ───────────────────────────────────
+# Same grid, no agglomeration spillover. Used to isolate how much of the
+# planner's optimal subsidy is driven by the agglomeration externality
+# vs.\ the Cournot markup / cross-region competition channels.
+const GAMMA_ZERO = (0.0, 0.0, 0.0)
 
-# ── Heatmap of ΔW₃ % (treated region) ─────────────────────────────────────
-i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
-plt3 = heatmap(PSI_FRAC, TAU_FRAC, dW_r3_pct;
-               xlabel = "Entry-subsidy fraction ψ / φ̂",
-               ylabel = "Innovation-subsidy fraction τ / κ̂",
-               title  = "ΔW₃ (% of baseline): joint region-3 subsidies",
-               c = :balance, clims = (-maximum(abs, dW_r3_pct), maximum(abs, dW_r3_pct)),
-               colorbar_title = "ΔW₃ %",
-               size = (720, 540),
-               titlefontsize = 12, guidefontsize = 10,
-               tickfontsize = 9,
-               left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
-               right_margin = 7Plots.mm, top_margin = 3Plots.mm)
+p_base_zg = default_params(; gamma = GAMMA_ZERO, kappa = KAPPA_HAT, phi = PHI_HAT,
+                             subsidy = (0.0, 0.0, 0.0),
+                             entry_subsidy = (0.0, 0.0, 0.0))
+
+@printf("\n=== Counterfactual: same %d×%d grid with γ = (0, 0, 0) ===\n",
+        length(TAU_FRAC), length(PSI_FRAC))
+
+println("Baseline (no agglomeration, no subsidy)…")
+@time w_base_zg = expected_welfare_mc(p_base_zg; n_markets = N_MARKETS, seed = SEED)
+
+dWtot_zg     = Matrix{Float64}(undef, nT, nP)
+dWtot_pct_zg = Matrix{Float64}(undef, nT, nP)
+dW_r3_pct_zg = Matrix{Float64}(undef, nT, nP)
+
+@printf("\n  %6s %6s | %10s %10s | %+9s\n",
+        "τ/κ̂", "ψ/φ̂", "ΔΣW", "ΔΣW %", "ΔW₃ %")
 for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
-    annotate!(plt3, fP, fT, text(@sprintf("%+.2f", dW_r3_pct[i,j]), 8, :black))
+    τ = fT * KAPPA_HAT
+    ψ = fP * PHI_HAT
+    p_g = default_params(; gamma = GAMMA_ZERO, kappa = KAPPA_HAT, phi = PHI_HAT,
+                           subsidy       = (0.0, 0.0, τ),
+                           entry_subsidy = (0.0, 0.0, ψ))
+    w_g = expected_welfare_mc(p_g; n_markets = N_MARKETS, seed = SEED)
+    Δ   = w_g.total_welfare - w_base_zg.total_welfare
+    Δp  = 100.0 * Δ / w_base_zg.total_welfare
+    dWtot_zg[i,j]     = Δ
+    dWtot_pct_zg[i,j] = Δp
+    dW_r3_pct_zg[i,j] = 100.0 * (w_g.welfare_by_region[3] - w_base_zg.welfare_by_region[3]) / w_base_zg.welfare_by_region[3]
+    @printf("  %6.2f %6.2f | %+10.4f %+9.2f%% | %+8.2f%%\n",
+            fT, fP, Δ, Δp, dW_r3_pct_zg[i,j])
 end
-scatter!(plt3, [PSI_FRAC[j_best_r3]], [TAU_FRAC[i_best_r3]];
-         marker = :star5, ms = 12, color = :gold, label = "argmax",
-         legend = :topleft)
-fig_path_r3 = joinpath(OUT_FIG, "joint_subsidy_heatmap_r3.pdf")
-savefig(plt3, fig_path_r3)
-println("Saved figure: $fig_path_r3")
+
+i_best_zg, j_best_zg = Tuple(argmax(dWtot_zg))
+@printf("\n  γ = 0 welfare-max cell: τ/κ̂ = %.2f,  ψ/φ̂ = %.2f   ΔΣW = %+.4f  (%+.2f%%)\n",
+        TAU_FRAC[i_best_zg], PSI_FRAC[j_best_zg],
+        dWtot_zg[i_best_zg,j_best_zg], dWtot_pct_zg[i_best_zg,j_best_zg])
+
+i_best_r3, j_best_r3 = Tuple(argmax(dW_r3_pct))
+
+# ── Cache grid data to CSV (consumed by plot_joint_subsidy.jl) ─────────────
+df_hat = DataFrame(tau_frac     = Float64[],
+                   psi_frac     = Float64[],
+                   dW_total     = Float64[],
+                   dW_total_pct = Float64[],
+                   dW_r1_pct    = Float64[],
+                   dW_r2_pct    = Float64[],
+                   dW_r3_pct    = Float64[])
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    push!(df_hat, (fT, fP, dWtot[i,j], dWtot_pct[i,j],
+                   dW_r1_pct[i,j], dW_r2_pct[i,j], dW_r3_pct[i,j]))
+end
+cache_path_hat = joinpath(OUT_CACHE, "joint_subsidy_gamma_hat.csv")
+CSV.write(cache_path_hat, df_hat)
+println("\nSaved cache: $cache_path_hat")
+
+df_zg = DataFrame(tau_frac     = Float64[],
+                  psi_frac     = Float64[],
+                  dW_total     = Float64[],
+                  dW_total_pct = Float64[],
+                  dW_r3_pct    = Float64[])
+for (i, fT) in enumerate(TAU_FRAC), (j, fP) in enumerate(PSI_FRAC)
+    push!(df_zg, (fT, fP, dWtot_zg[i,j], dWtot_pct_zg[i,j], dW_r3_pct_zg[i,j]))
+end
+cache_path_zg = joinpath(OUT_CACHE, "joint_subsidy_gamma_zero.csv")
+CSV.write(cache_path_zg, df_zg)
+println("Saved cache: $cache_path_zg")
 
 # ── Table: ΔΣW % grid ──────────────────────────────────────────────────────
 sgn2(x) = x ≥ 0 ? @sprintf("%+.2f", x) : @sprintf("%.2f", x)
@@ -202,8 +241,25 @@ macros = """% Auto-generated by code/scripts/run_joint_subsidy.jl
 \\newcommand{\\JointSubsidyROptPsiFrac}{$(fmt2(PSI_FRAC[j_best_r3]))}
 \\newcommand{\\JointSubsidyROptDWPctRThree}{$(sgn2(dW_r3_pct[i_best_r3,j_best_r3]))}
 """
+
+macros *= """% No-agglomeration counterfactual: γ = (0, 0, 0).
+\\newcommand{\\JointSubsidyNoAgglomOptTauFrac}{$(fmt2(TAU_FRAC[i_best_zg]))}
+\\newcommand{\\JointSubsidyNoAgglomOptPsiFrac}{$(fmt2(PSI_FRAC[j_best_zg]))}
+\\newcommand{\\JointSubsidyNoAgglomOptTau}{$(fmt(TAU_FRAC[i_best_zg]*KAPPA_HAT))}
+\\newcommand{\\JointSubsidyNoAgglomOptPsi}{$(fmt(PSI_FRAC[j_best_zg]*PHI_HAT))}
+\\newcommand{\\JointSubsidyNoAgglomOptDWTotal}{$(sgn(dWtot_zg[i_best_zg,j_best_zg]))}
+\\newcommand{\\JointSubsidyNoAgglomOptDWPct}{$(sgn2(dWtot_pct_zg[i_best_zg,j_best_zg]))}
+% Corner cells under γ = 0
+\\newcommand{\\JointSubsidyNoAgglomInnovOnlyMaxDWPct}{$(sgn2(dWtot_pct_zg[end,1]))}
+\\newcommand{\\JointSubsidyNoAgglomEntryOnlyMaxDWPct}{$(sgn2(dWtot_pct_zg[1,end]))}
+\\newcommand{\\JointSubsidyNoAgglomBothMaxDWPct}{$(sgn2(dWtot_pct_zg[end,end]))}
+"""
+
 macro_path = joinpath(OUT_EST, "joint_subsidy_estimates.txt")
 open(macro_path, "w") do io; write(io, macros); end
 println("Saved macros: $macro_path")
+
+# ── Render heatmaps from cached CSVs ───────────────────────────────────────
+include(joinpath(@__DIR__, "plot_joint_subsidy.jl"))
 
 println("\nDone.")

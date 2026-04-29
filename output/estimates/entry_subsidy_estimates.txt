@@ -3,35 +3,35 @@
 % Grid ψ/φ̂ ∈ [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]; K = 5000 markets per ψ; CRN seed = 20260424.
 \newcommand{\EntrySubsidyNMarkets}{5000}
 \newcommand{\EntrySubsidySeed}{20260424}
-\newcommand{\EntrySubsidyKappaHat}{0.3002}
-\newcommand{\EntrySubsidyPhiHat}{0.1777}
+\newcommand{\EntrySubsidyKappaHat}{0.2193}
+\newcommand{\EntrySubsidyPhiHat}{0.1810}
 \newcommand{\EntrySubsidyGammaHat}{0.1500}
 \newcommand{\EntrySubsidyGridLength}{6}
 \newcommand{\EntrySubsidyMaxFrac}{0.50}
-\newcommand{\EntrySubsidyMaxPsi}{0.0888}
+\newcommand{\EntrySubsidyMaxPsi}{0.0905}
 % Baseline (ψ = 0) per-region entry rate
-\newcommand{\EntrySubsidyBaseEnterROne}{0.5562}
-\newcommand{\EntrySubsidyBaseEnterRTwo}{0.5801}
-\newcommand{\EntrySubsidyBaseEnterRThree}{0.5792}
+\newcommand{\EntrySubsidyBaseEnterROne}{0.5544}
+\newcommand{\EntrySubsidyBaseEnterRTwo}{0.5766}
+\newcommand{\EntrySubsidyBaseEnterRThree}{0.5757}
 % Headline ψ = ψ_max per-region entry rate
-\newcommand{\EntrySubsidyMaxEnterROne}{0.5548}
-\newcommand{\EntrySubsidyMaxEnterRTwo}{0.5796}
-\newcommand{\EntrySubsidyMaxEnterRThree}{0.6180}
+\newcommand{\EntrySubsidyMaxEnterROne}{0.5530}
+\newcommand{\EntrySubsidyMaxEnterRTwo}{0.5766}
+\newcommand{\EntrySubsidyMaxEnterRThree}{0.6163}
 \newcommand{\EntrySubsidyMaxEnterPctROne}{-0.24}
-\newcommand{\EntrySubsidyMaxEnterPctRTwo}{-0.08}
-\newcommand{\EntrySubsidyMaxEnterPctRThree}{+6.71}
+\newcommand{\EntrySubsidyMaxEnterPctRTwo}{+0.00}
+\newcommand{\EntrySubsidyMaxEnterPctRThree}{+7.05}
 % Headline ψ welfare deltas (absolute and percent)
-\newcommand{\EntrySubsidyMaxDWROne}{-0.0016}
-\newcommand{\EntrySubsidyMaxDWRTwo}{-0.0011}
-\newcommand{\EntrySubsidyMaxDWRThree}{+0.0031}
-\newcommand{\EntrySubsidyMaxDWTotal}{+0.0003}
-\newcommand{\EntrySubsidyMaxDWPctTotal}{+0.01}
-\newcommand{\EntrySubsidyMaxDWPctROne}{-0.07}
-\newcommand{\EntrySubsidyMaxDWPctRTwo}{-0.05}
-\newcommand{\EntrySubsidyMaxDWPctRThree}{+0.14}
+\newcommand{\EntrySubsidyMaxDWROne}{-0.0019}
+\newcommand{\EntrySubsidyMaxDWRTwo}{-0.0013}
+\newcommand{\EntrySubsidyMaxDWRThree}{+0.0033}
+\newcommand{\EntrySubsidyMaxDWTotal}{+0.0001}
+\newcommand{\EntrySubsidyMaxDWPctTotal}{+0.00}
+\newcommand{\EntrySubsidyMaxDWPctROne}{-0.09}
+\newcommand{\EntrySubsidyMaxDWPctRTwo}{-0.06}
+\newcommand{\EntrySubsidyMaxDWPctRThree}{+0.15}
 % Government outlay at headline ψ (per market)
-\newcommand{\EntrySubsidyMaxGovOutlay}{0.0254}
+\newcommand{\EntrySubsidyMaxGovOutlay}{0.0258}
 % Welfare-maximising grid point
-\newcommand{\EntrySubsidyOptimumFrac}{0.50}
-\newcommand{\EntrySubsidyOptimumDWTotal}{+0.0003}
-\newcommand{\EntrySubsidyOptimumDWPct}{+0.01}
+\newcommand{\EntrySubsidyOptimumFrac}{0.20}
+\newcommand{\EntrySubsidyOptimumDWTotal}{+0.0002}
+\newcommand{\EntrySubsidyOptimumDWPct}{+0.00}

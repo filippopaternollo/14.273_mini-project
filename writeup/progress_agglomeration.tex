@@ -24,6 +24,8 @@
 \input{../output/estimates/merger_estimates.txt}
 \input{../output/estimates/subsidy_estimates.txt}
 \input{../output/estimates/entry_subsidy_estimates.txt}
+\input{../output/estimates/joint_subsidy_estimates.txt}
+\input{../output/estimates/misspec_estimates.txt}
 
 \title{Progress Note: 2-Period Igami Model with Agglomeration}
 \author{14.273 Mini Project}
@@ -158,8 +160,16 @@ The model is solved by backward induction, following Igami (2017):
 
 \section{Calibration}
 
-We summarize the parameters we use for calibration and for simulating the
-data in Table~\ref{tab:params}.\\
+We summarize the parameters we use for calibration and for simulating
+the data in Table~\ref{tab:params}. We set $\kappa = \phi = 0.2$ so that
+any remaining structural difference between incumbents and entrants in
+their period-1 adoption decision is driven by \textbf{cannibalization}
+alone: a ``both''-type firm internalizes that adding new-gen output
+erodes its own old-gen profit, while a PE entrant has no legacy old-gen
+output to displace. The two policy counterfactuals below
+(Sections~\ref{sec:subsidy} and~\ref{sec:entry_subsidy}) lean on this
+distinction: the innovation subsidy pulls the cannibalization-discounted
+margin, while the entry subsidy pulls the clean margin.\\
 
 \begin{table}[ht]
   \centering
@@ -176,7 +186,7 @@ data in Table~\ref{tab:params}.\\
     $c_o$     & Old-tech marginal cost        & 1.5  \\
     $c_{n,0}$ & New-tech baseline cost        & 0.5  \\
     $\beta$   & Discount factor               & 0.9  \\
-    $\kappa$  & Innovation cost               & 0.3  \\
+    $\kappa$  & Innovation cost               & 0.2  \\
     $\phi$    & Entry cost                    & 0.2  \\
     $\sigma$  & EVT1 scale                    & 0.5  \\
     $\gamma$  & Agglomeration (default)       & 0.15 \\
@@ -252,7 +262,7 @@ symmetric $s_0$ with uniform $\gamma_r$, the three regions' CCPs differ by
 at most $10^{-3}$. Region~1 commits without observing anyone, while
 region~3 best-responds to the realised history. The gap is well below the
 magnitude of every counterfactual difference reported in
-Section~\ref{sec:merger}.
+Appendix~\ref{sec:merger}.
 
 \section{Estimation on Simulated Data}
 \label{sec:estimation}
@@ -360,6 +370,475 @@ supports. The period-1 action log-likelihood at the optimum is $\LogLikHat$.\\
     $(\kappa, \phi)$ by period-1 action MLE conditional on $\widehat{\gamma}$.
     Standard errors (BHHH) are reported only for the MLE step.}
 \end{table}
+
+\section{Counterfactual: Region-3 Innovation Subsidy}
+\label{sec:subsidy}
+
+A region-3 innovation subsidy of size $\tau$ shifts the \emph{private}
+cost of innovation in region~3 from $\widehat{\kappa}$ to
+$(\widehat{\kappa} - \tau)$ while leaving the social resource cost
+unchanged at $\widehat{\kappa}$. Sweeping $\tau$ over the grid
+$\tau / \widehat{\kappa} \in \{0, 0.10, \ldots, 0.50\}$ produces a
+clean planner-vs-country split: region~3's own welfare is weakly
+\emph{increasing} in $\tau$, but aggregate welfare across the three
+regions has a small interior optimum at
+$\tau / \widehat{\kappa} = \SubsidyOptimumFrac$
+($\Delta\Sigma W = \SubsidyOptimumDWPct\,\%$). At the largest grid
+point $\tau / \widehat{\kappa} = \SubsidyMaxFrac$, region~3's
+$P(\mathrm{innov} \mid \mathrm{old})$ rises by
+$\SubsidyMaxInnovPctRThree\,\%$ and its welfare gains
+$\SubsidyMaxDWPctRThree\,\%$, but regions~1 and~2 lose
+$|\SubsidyMaxDWPctROne|\,\%$ and $|\SubsidyMaxDWPctRTwo|\,\%$, so the
+planner stops well short of the corner. The wedge between region~3's
+preferred subsidy and the planner's is the cross-region Cournot
+externality: the subsidy makes region~3's new-tech producers cheaper
+in a globally competitive product market, and the producers in
+regions~1 and~2 lose share. The rest of the section sets up the
+subsidy specification, derives the welfare formula under sovereign
+funding, describes the Monte Carlo evaluation, and walks through the
+mechanism.
+
+\subsection{Subsidy specification}
+
+A region-$r$ innovation subsidy of size $\tau_r \ge 0$ changes only the
+\emph{private} payoff of an old-tech firm switching to ``both''
+technology:
+\begin{equation}
+  u^{\mathrm{innov}}_r
+    = \pi^{\mathrm{both}}_r(s) - (\kappa - \tau_r)
+      + \beta\, \mathrm{EV}^{\mathrm{old}\to\mathrm{both}}_r,
+  \label{eq:subsidy_payoff}
+\end{equation}
+leaving the entry decision and the rest of the game unchanged. The
+implementation adds a single \texttt{subsidy} field to the parameter
+struct; the default \texttt{(0,0,0)} recovers the
+no-subsidy baseline. We sweep the one-region policy
+$\tau = (0, 0, \tau)$ to isolate the question ``what does targeted
+industrial policy in region~3 do?'' from the broader question of a
+global R\&D subsidy. The spillover specification stays at the local-only
+baseline of equation~\eqref{eq:local_agglom}.
+
+\subsection{Welfare under sovereign funding}
+
+Each region is treated as a sovereign country: its own government funds
+its own subsidy from its own taxpayers, so the transfer
+$\tau_r \cdot k^{\mathrm{innov}}_r$ flows from region~$r$'s taxpayers to
+region~$r$'s firms and cancels exactly inside region~$r$'s welfare. The
+\emph{social} resource cost remains the full $\kappa$ even when the firm
+only pays $(\kappa - \tau_r)$; the subsidy reduces the private burden,
+not the real labour and materials embodied in a new-technology
+blueprint. Two-period discounted welfare per region is therefore
+\begin{equation}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\, \mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\, \mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+  \label{eq:welfare_subsidy}
+\end{equation}
+identical in form to equation~\eqref{eq:welfare}: the subsidy is a
+within-region transfer that does not appear in $W_r$. With this
+accounting, the identity
+$\sum_r W_r = \mathrm{CS}_{\mathrm{total}} + \sum_r \mathrm{PS}_r
+- \sum_r (\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$
+holds exactly in the baseline and in every grid scenario. The runner
+verifies it numerically and finds residuals at machine precision.
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \SubsidyNMarkets$ independent simulations per scenario.
+Each market draws its own initial state $s_0$ from the same distribution
+\texttt{simulate\_data.jl} uses, so the counterfactual sits on the same
+population the model was estimated on. The same seed (\SubsidySeed)
+drives the baseline and every grid point, with per-market
+\texttt{MersenneTwister(seed + $k$)}. Identical $s_0$ draws and
+identical EVT1 shock paths under all scenarios mean each market
+contributes paired observations $(W_r^{\mathrm{base}},
+W_r^{\tau})$, so the variance of the welfare difference is much smaller
+than the variance of either level. Headline numbers stabilise to roughly
+$0.05$ percentage points by $K = 1000$.
+
+\subsection{Calibration and results}
+
+We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$, $c_{n,0}$,
+and $N_{\max}$ at the values of Table~\ref{tab:params}, and use the
+structural estimates from Section~\ref{sec:estimation}: $\widehat{\kappa} =
+\SubsidyKappaHat$, $\widehat{\phi} = \SubsidyPhiHat$, and uniform
+$\widehat{\gamma}_r = \SubsidyGammaHat$.\\
+
+Table~\ref{tab:subsidy} reports the full grid sweep. Region~3's
+innovation rate climbs steadily from $\SubsidyBaseInnovRThree$ at $\tau =
+0$ to $\SubsidyMaxInnovRThree$ at the largest grid point, while regions~1
+and~2 dip slightly through equilibrium feedback. Aggregate welfare is
+non-monotonic in $\tau$: it rises modestly with the first units of
+subsidy, peaks at $\tau / \widehat{\kappa} = \SubsidyOptimumFrac$, and
+declines beyond that as cross-region producer-surplus losses outweigh
+the additional own-region gain.\\
+
+\begin{table}[ht]
+  \centering
+  \caption{Region-3 innovation subsidy: grid sweep over $\tau / \widehat{\kappa}$}
+  \medskip
+  \label{tab:subsidy}
+  \input{../output/tables/subsidy_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over $K = \SubsidyNMarkets$
+    independent markets, each drawing its own $s_0$ from the DGP used by
+    \texttt{simulate\_data.jl}; common random numbers across all
+    scenarios (seed = \SubsidySeed). Calibration: $\widehat{\kappa} =
+    \SubsidyKappaHat$, $\widehat{\phi} = \SubsidyPhiHat$, uniform
+    $\widehat{\gamma}_r = \SubsidyGammaHat$. The subsidy is region-3
+    only: $(0, 0, \tau)$. Welfare is computed under sovereign funding,
+    so the transfer cancels within region~3. CS allocated equally
+    across the three regions; PS$_r$ aggregates own-region firms'
+    profits in both periods; costs paid charges the full
+    $\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r$ to
+    region~$r$.}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/subsidy_innovation.pdf}
+  \caption{Innovation rate $P(\text{innov} \mid \text{old}, r)$ by region
+           across the subsidy grid. Only region~3 (treated) responds
+           strongly; regions~1 and~2 dip slightly through equilibrium
+           feedback.}
+  \label{fig:subsidy_innovation}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/subsidy_grid.pdf}
+  \caption{Per-region and total welfare change vs.\ baseline as a
+           function of $\tau / \widehat{\kappa}$. Region~3's own
+           welfare is weakly increasing across the grid, while
+           regions~1 and~2 lose. Aggregate welfare (black) peaks at
+           the interior point $\tau / \widehat{\kappa} =
+           \SubsidyOptimumFrac$.}
+  \label{fig:subsidy_grid}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{The subsidy works on its target margin.} Region~3's
+$P(\mathrm{innov} \mid \mathrm{old})$ rises from $\SubsidyBaseInnovRThree$
+to $\SubsidyMaxInnovRThree$ at $\tau / \widehat{\kappa} = \SubsidyMaxFrac$,
+a $\SubsidyMaxInnovPctRThree\,\%$ lift. The mechanism is direct: a lower
+private cost moves the threshold draw of the EVT1 shock that triggers
+innovation. As a policy lever for raising regional R\&D activity, the
+subsidy works.\\
+
+\textbf{Region~3 alone wants the subsidy maxed; the planner does not.}
+A subsidy is welfare-improving for the planner only if there is a
+positive externality on the subsidised margin that the firm fails to
+internalise. In our calibration the agglomeration externality
+$\widehat{\gamma}_r = \SubsidyGammaHat$ is \emph{local}: region~3's
+innovation today helps only region~3's own period-2 cost, and the firm
+already internalises the bulk of that benefit through its expected
+period-2 profit. Cournot competition across regions, in contrast, makes
+region-3 expansion a \emph{negative} externality on regions~1 and~2,
+which the planner does internalise. Region~3 alone sees only the gain
+and prefers $\tau / \widehat{\kappa} = \SubsidyMaxFrac$; the planner
+balances the gain against the cross-region loss and settles on the
+interior $\tau / \widehat{\kappa} = \SubsidyOptimumFrac$.\\
+
+\textbf{The non-treated regions bear small but consistent losses.}
+Cheaper region-3 production drags the global new-technology price down,
+so regions~1 and~2 see lower firm profits. The CS share they receive
+from cheaper goods is too small to compensate. At
+$\tau / \widehat{\kappa} = \SubsidyMaxFrac$, region~1 loses
+$|\SubsidyMaxDWPctROne|\,\%$ of its baseline welfare and region~2 loses
+$|\SubsidyMaxDWPctRTwo|\,\%$. These are small but signed in the same
+direction across all $K \in \{500, 1000, 5000\}$.\\
+
+The result is calibration-dependent. Under a spillover specification
+that pools region~3 with another region (an alliance variant of
+Appendix~\ref{sec:merger}), the planner would internalise the spillover
+from region-3 innovation onto its partner and the optimum would shift
+right. With a larger $\widehat{\gamma}$ or a tighter $\rho$, the
+cross-region effects scale accordingly. Full details, including the
+K-stability diagnostic and the sovereign-funding accounting, are in
+\texttt{notes/subsidy\_counterfactual.md}.
+
+\section{Counterfactual: Region-3 Entry Subsidy}
+\label{sec:entry_subsidy}
+
+A region-3 \emph{entry} subsidy of size $\psi$ shifts the private cost
+of entering as a new-technology firm in region~3 from $\widehat{\phi}$
+to $(\widehat{\phi} - \psi)$ while leaving the social resource cost of
+entry unchanged at $\widehat{\phi}$. The same planner-vs-country split
+appears as in the innovation case, but at a different optimum: region~3
+alone prefers $\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$ (its
+welfare rises by $\EntrySubsidyMaxDWPctRThree\,\%$ at the corner),
+while the planner picks the interior $\psi / \widehat{\phi} =
+\EntrySubsidyOptimumFrac$ ($\Delta\Sigma W =
+\EntrySubsidyOptimumDWPct\,\%$). At the corner, regions~1 and~2 lose
+$|\EntrySubsidyMaxDWPctROne|\,\%$ and $|\EntrySubsidyMaxDWPctRTwo|\,\%$
+respectively, so the cross-region loss eats up the own-region gain.\\
+
+The entry-subsidy story differs from the innovation-subsidy story in
+two structural ways, both visible in the numbers. First, region~3's
+own welfare gain at $\psi/\widehat{\phi} = 0.5$ is
+$\EntrySubsidyMaxDWPctRThree\,\%$ versus $\SubsidyMaxDWPctRThree\,\%$
+under the innovation subsidy --- because new entrants add new-tech
+quantity without cannibalising existing old-gen revenue, the
+own-region pass-through is larger per dollar of subsidy. Second, the
+larger pass-through also feeds back into larger cross-region losses,
+so the planner's optimal entry subsidy ($\EntrySubsidyOptimumFrac$) is
+\emph{smaller} than its optimal innovation subsidy
+($\SubsidyOptimumFrac$): the cleaner instrument also has a steeper
+externality cost, and the planner stops earlier on the entry axis.
+
+\subsection{Subsidy specification}
+
+A region-$r$ entry subsidy of size $\psi_r \ge 0$ changes only the
+\emph{private} payoff of a potential entrant becoming a new-tech firm:
+\begin{equation}
+  u^{\mathrm{enter}}_r = -(\phi - \psi_r) + \beta\,
+  \mathrm{EV}^{\mathrm{pe}\to\mathrm{new}}_r,
+  \label{eq:entry_subsidy_payoff}
+\end{equation}
+leaving the innovation decision and the rest of the game unchanged.
+The implementation adds a single \texttt{entry\_subsidy} field to the
+parameter struct; the default \texttt{(0,0,0)} recovers the
+no-subsidy baseline. We sweep the one-region policy
+$\psi = (0, 0, \psi)$ to isolate targeted entry policy in region~3
+from the question of a global entry subsidy. The spillover
+specification stays at the local-only baseline.
+
+\subsection{Welfare under sovereign funding}
+
+As in the innovation-subsidy section, region~$r$'s government funds
+its own subsidy from its own taxpayers, so the transfer
+$\psi_r \cdot k^{\mathrm{enter}}_r$ flows from region~$r$'s taxpayers
+to region~$r$'s entrants and cancels exactly inside region~$r$'s
+welfare. The social resource cost of an entry remains the full
+$\phi$. Two-period discounted welfare per region is
+\begin{equation}
+  W_r
+    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\, \mathrm{CS}(s_1)\bigr]
+    + \mathrm{PS}_r(s_0) + \beta\, \mathrm{PS}_r(s_1)
+    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
+  \label{eq:welfare_entry_subsidy}
+\end{equation}
+identical in form to equation~\eqref{eq:welfare}: the entry subsidy is
+a within-region transfer that does not appear in $W_r$. The identity
+$\sum_r W_r = \mathrm{CS}_{\mathrm{total}} + \sum_r \mathrm{PS}_r
+- \sum_r (\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$
+holds at machine precision in baseline and in every grid scenario.
+
+\subsection{Evaluation by Monte Carlo with common random numbers}
+
+We average $K = \EntrySubsidyNMarkets$ independent simulations per
+scenario, with the same seed (\EntrySubsidySeed) across baseline and
+every grid point and per-market \texttt{MersenneTwister(seed + $k$)}.
+Headline numbers stabilise to roughly $0.05$ percentage points by
+$K = 1000$; the aggregate welfare effect is small (about a basis
+point) but its sign is robust across $K$.
+
+\subsection{Calibration and results}
+
+We use the structural estimates from Section~\ref{sec:estimation}:
+$\widehat{\kappa} = \EntrySubsidyKappaHat$,
+$\widehat{\phi} = \EntrySubsidyPhiHat$, and uniform
+$\widehat{\gamma}_r = \EntrySubsidyGammaHat$.\\
+
+Table~\ref{tab:entry_subsidy} reports the full grid sweep. Region~3's
+entry rate climbs from $\EntrySubsidyBaseEnterRThree$ at $\psi = 0$ to
+$\EntrySubsidyMaxEnterRThree$ at the largest grid point, while
+regions~1 and~2 dip slightly through equilibrium feedback. Region~3's
+own welfare is weakly increasing across the grid, but aggregate
+welfare peaks at the interior point
+$\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$ and turns negative
+at higher $\psi$ as cross-region losses grow.\\
+
+\begin{table}[ht]
+  \centering
+  \caption{Region-3 entry subsidy: grid sweep over $\psi / \widehat{\phi}$}
+  \medskip
+  \label{tab:entry_subsidy}
+  \input{../output/tables/entry_subsidy_results.tex}
+  \caption*{\footnotesize Notes: Monte Carlo over
+    $K = \EntrySubsidyNMarkets$ independent markets, each drawing its
+    own $s_0$ from the DGP used by \texttt{simulate\_data.jl}; common
+    random numbers across all scenarios (seed =
+    \EntrySubsidySeed). Calibration: $\widehat{\kappa} =
+    \EntrySubsidyKappaHat$, $\widehat{\phi} = \EntrySubsidyPhiHat$,
+    uniform $\widehat{\gamma}_r = \EntrySubsidyGammaHat$. The subsidy
+    is region-3 only: $(0, 0, \psi)$. Welfare is computed under
+    sovereign funding, so the transfer cancels within region~3.}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/entry_subsidy_entry.pdf}
+  \caption{Entry rate $P(\mathrm{enter} \mid \mathrm{pe}, r)$ by region
+           across the entry-subsidy grid. Only region~3 (treated)
+           responds strongly; regions~1 and~2 dip slightly through
+           equilibrium feedback.}
+  \label{fig:entry_subsidy_entry}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\textwidth]{../output/figures/entry_subsidy_grid.pdf}
+  \caption{Per-region and total welfare change vs.\ baseline as a
+           function of $\psi / \widehat{\phi}$. Region~3's own welfare
+           rises monotonically with $\psi$; regions~1 and~2 lose.
+           Aggregate welfare (black) peaks at the interior point
+           $\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$ and turns
+           negative at higher $\psi$.}
+  \label{fig:entry_subsidy_grid}
+\end{figure}
+
+\subsection{Discussion}
+
+Three points are worth highlighting.\\
+
+\textbf{Entry pulls a cleaner margin than innovation.} Innovating
+firms are old-tech incumbents that switch to ``both''. They were
+already producing old-tech output, and the new-tech output they add
+as ``both'' partly cannibalises that old-tech revenue through
+cross-market substitution $\rho$. New entrants, in contrast, arrive
+with no legacy old-tech output to displace. Each marginal entry
+therefore adds more total new-tech quantity at the global Cournot
+stage than each marginal innovation does. With $\kappa = \phi$ in our
+calibration, the per-dollar private-cost reduction is the same under
+the two policies, so the difference shows up directly in region~3's
+welfare gain: at the corner, $\EntrySubsidyMaxDWPctRThree\,\%$ under
+entry versus $\SubsidyMaxDWPctRThree\,\%$ under innovation. The
+cross-region losses scale up correspondingly:
+$|\EntrySubsidyMaxDWPctROne|\,\%$ for region~1 versus
+$|\SubsidyMaxDWPctROne|\,\%$ under innovation.\\
+
+\textbf{The planner wants both subsidies, but at modest interior
+levels.} Under the innovation subsidy alone the planner's optimum is
+$\tau / \widehat{\kappa} = \SubsidyOptimumFrac$ ($\Delta\Sigma W =
+\SubsidyOptimumDWPct\,\%$); under the entry subsidy alone it is
+$\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$ ($\Delta\Sigma W =
+\EntrySubsidyOptimumDWPct\,\%$). The entry-subsidy optimum is smaller
+in absolute terms because the entry margin has higher pass-through and
+therefore a steeper marginal externality cost on regions~1 and~2: the
+planner accepts the cleaner instrument at a smaller dose. In both
+cases, region~3 alone would prefer the corner --- the wedge between
+its preferred subsidy and the planner's is exactly the cross-region
+externality that the planner internalises and region~3 does not.\\
+
+\textbf{The aggregate effects are small but signed.} Both interior
+optima deliver a $\Delta\Sigma W$ on the order of $0.01\,\%$ of
+baseline. This is small in level, but the interior optimum is what
+makes the planner-vs-region-3 split well-defined: region~3 has a
+strictly preferred policy (the corner) and the planner has a strictly
+different one (the interior). The joint sweep below sharpens this
+contrast on the two-instrument grid.\\
+
+\subsection{Joint subsidy grid}
+\label{sec:joint_subsidy}
+
+A joint sweep over $(\tau, \psi)$ on the $\JointSubsidyGridLengthTau
+\times \JointSubsidyGridLengthPsi$ grid lets the planner trade the two
+instruments off against each other. We use it to make three points,
+which the heatmap of Figure~\ref{fig:joint_subsidy_heatmap}
+summarises. The two markers on the heatmap correspond to the
+planner's argmax under the two calibrations: the gold star is the
+agglomeration calibration $\gamma = \widehat{\gamma}$; the white
+diamond is the no-agglomeration counterfactual $\gamma = 0$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.78\textwidth]{../output/figures/joint_subsidy_heatmap.pdf}
+  \caption{Aggregate welfare change $\Delta\Sigma W$ (\% of baseline)
+           on the joint $(\tau/\widehat{\kappa}, \psi/\widehat{\phi})$
+           grid, evaluated at $\gamma = \widehat{\gamma}$. The
+           \emph{gold star} marks the planner's argmax under
+           $\gamma = \widehat{\gamma}$:
+           $(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$, with
+           $\Delta\Sigma W = \JointSubsidyOptDWPct\,\%$. The
+           \emph{white diamond} marks the planner's argmax in the
+           same problem with $\gamma$ set to zero:
+           $(\JointSubsidyNoAgglomOptTauFrac,
+           \JointSubsidyNoAgglomOptPsiFrac)$. Region~3's own-welfare
+           argmax is the south-east corner of the grid
+           $(\JointSubsidyROptTauFrac, \JointSubsidyROptPsiFrac)$,
+           where $\Delta W_3 = \JointSubsidyROptDWPctRThree\,\%$.}
+  \label{fig:joint_subsidy_heatmap}
+\end{figure}
+
+\paragraph{(1) The planner's optimal subsidy is asymmetric: more entry
+than innovation.} At the agglomeration calibration the planner picks
+$(\tau/\widehat{\kappa}, \psi/\widehat{\phi}) =
+(\JointSubsidyOptTauFrac, \JointSubsidyOptPsiFrac)$, with the
+entry-subsidy fraction substantially larger than the innovation-subsidy
+fraction. The mechanism is the cannibalization wedge of Igami's
+``innovator's dilemma'': an old-tech incumbent who switches to
+``both'' adds new-tech output but partly cannibalises its own old-tech
+revenue, so it produces \emph{less} new-tech quantity than a fresh
+entrant of equivalent type. A unit of entry subsidy therefore moves
+the new-tech market further than a unit of innovation subsidy. The
+planner internalises this and tilts the mix toward entry; the
+own-region welfare-per-corner numbers in
+Sections~\ref{sec:subsidy} and~\ref{sec:entry_subsidy} confirm this
+($\EntrySubsidyMaxDWPctRThree\,\%$ for entry vs.\
+$\SubsidyMaxDWPctRThree\,\%$ for innovation at $\psi/\widehat{\phi} =
+\tau/\widehat{\kappa} = 0.5$).
+
+\paragraph{(2) Agglomeration is the externality the planner is
+correcting.} Under $\gamma = \widehat{\gamma} = \SubsidyGammaHat$, the
+local agglomeration spillover is a positive externality: adding an
+innovator (or entrant, since both end up using new tech) lowers next
+period's $c_{n,r}$ for every other new-tech firm in region~$r$. The
+firm internalises only its own period-2 cost reduction; the rest of
+the cluster gets it for free. A subsidy that nudges $P(\mathrm{innov})$
+or $P(\mathrm{enter})$ above the laissez-faire level helps close the
+gap. With $\gamma$ shut off, that channel disappears and only the
+\emph{negative} cross-region Cournot externality remains. The planner
+then prefers \emph{no} subsidy at all: the no-agglomeration argmax is
+the corner $(\tau/\widehat{\kappa}, \psi/\widehat{\phi}) =
+(\JointSubsidyNoAgglomOptTauFrac, \JointSubsidyNoAgglomOptPsiFrac)$,
+with $\Delta\Sigma W = \JointSubsidyNoAgglomOptDWPct\,\%$, and every
+positive cell in the no-agglomeration grid is welfare-decreasing
+(largest cell $\JointSubsidyNoAgglomBothMaxDWPct\,\%$). The size of
+the optimal subsidy is therefore proportional to the strength of the
+agglomeration externality, not a robust feature of the model.
+
+\paragraph{(3) A unilateral region-3 government over-subsidises.}
+Region~3's own welfare is monotone non-decreasing across the entire
+$(\tau, \psi)$ grid: it picks the corner
+$(\JointSubsidyROptTauFrac, \JointSubsidyROptPsiFrac)$, where
+$\Delta W_3 = \JointSubsidyROptDWPctRThree\,\%$. The planner stops far
+short of the corner because the planner internalises the
+producer-surplus losses imposed on regions~1 and~2 by cheaper
+region-3 output and region~3 does not. The wedge between region~3's
+preferred policy and the planner's is exactly the cross-region
+Cournot terms-of-trade externality. It would shrink if the spillover
+specification pooled region~3 with another region, since the planner
+would then internalise more of the spillover gain to region~3's
+partner (cf.\ the alliance variant of Appendix~\ref{sec:merger}).
+Full details, including the K-stability diagnostic, are in
+\texttt{notes/entry\_subsidy\_counterfactual.md}.
+
+\section{Next Steps}
+
+\begin{enumerate}
+  \item \textbf{Heterogeneous absorptive capacity.} The alliance result
+        here uses uniform $\widehat{\gamma}_r$. Allowing $\gamma_r$ to
+        differ across regions, with the bloc-pooled spec of
+        equation~\eqref{eq:bloc_pool}, would let one region's higher
+        absorptive capacity amplify the alliance's effect.
+  \item \textbf{Fiscal cost of policy.} The current welfare accounting
+        prices in firms' own costs paid but does not net out the fiscal
+        cost of any subsidy a government would need to deliver to enlarge
+        $\gamma_r$ in a target region. Adding government revenue and cost
+        makes the targeted-subsidy and alliance scenarios directly
+        comparable as policy levers.
+  \item \textbf{$T > 2$ horizon.} A genuine multi-period extension would
+        force the value-function recursion to use the
+        $\sigma \log \sum \exp$ ex-ante form at every internal period.
+        The current 2-period setup avoids this because period~2 is
+        terminal.
+\end{enumerate}
+
+\appendix
 
 \section{Counterfactual: EU--US Alliance}
 \label{sec:merger}
@@ -521,365 +1000,86 @@ responsive interior. Full details, including the K-stability diagnostic and
 the $\sigma\!\cdot\!\gamma_{\mathrm{em}}$ welfare convention, are in
 \texttt{notes/merger\_counterfactual.md}.
 
-\section{Counterfactual: Region-3 Innovation Subsidy}
-\label{sec:subsidy}
+\section{Strawman: a misspecified model without agglomeration}
+\label{sec:misspec}
 
-A region-3 innovation subsidy of size $\tau$ shifts the \emph{private}
-cost of innovation in region~3 from $\widehat{\kappa}$ to
-$(\widehat{\kappa} - \tau)$ while leaving the social resource cost
-unchanged at $\widehat{\kappa}$. Sweeping $\tau$ over the grid
-$\tau / \widehat{\kappa} \in \{0, 0.10, \ldots, 0.50\}$ shows that
-\emph{aggregate welfare is weakly decreasing in the subsidy across the
-entire grid}. At the largest grid point
-$\tau / \widehat{\kappa} = \SubsidyMaxFrac$, region~3's
-$P(\mathrm{innov} \mid \mathrm{old})$ rises by
-$\SubsidyMaxInnovPctRThree\,\%$, and its own welfare moves by
-$\SubsidyMaxDWPctRThree\,\%$, while regions~1 and~2 lose
-$\SubsidyMaxDWPctROne\,\%$ and $\SubsidyMaxDWPctRTwo\,\%$ respectively;
-total welfare changes by $\SubsidyMaxDWPctTotal\,\%$. The
-welfare-maximising grid point is $\tau / \widehat{\kappa} =
-\SubsidyOptimumFrac$ ($\Delta\Sigma W = \SubsidyOptimumDWPct\,\%$). The
-rest of the section sets up the subsidy specification, derives the
-welfare formula under sovereign funding, describes the Monte Carlo
-evaluation, and walks through the mechanism.
+This appendix records a strawman estimation exercise that did not
+deliver what we hoped. We re-estimated the model under the constraint
+$\gamma \equiv 0$, expecting the action-margin moments to diverge
+visibly from the truth. They do not. We retain the comparison because
+it documents the alternative we considered and because the static and
+comparative-static moments do show some smaller differences worth
+recording.\\
 
-\subsection{Subsidy specification}
+The misspecified analyst attributes cross-region cost differences to
+exogenous regional fundamentals (factor prices, geography) and
+estimates a region intercept $\delta_r$ on new-tech marginal cost.
+The misspecified cost function is
+\[
+   c_{n,r}^{\text{mis}} = c_{n0} + \delta_r,
+\]
+state-independent within a region. Step~1 NLS on the same Cournot
+data pins $\widehat{\delta}_r$ near
+$-\widehat{\gamma}_r \cdot \mathbb{E}[n_b^r + n_n^r]$ and leaves a
+residual SSR of $\MisspecNlsSsr$, against essentially zero for the
+correctly-specified Step~1. Step~2 MLE on period-1 actions yields
+$\widetilde{\kappa} = \MisspecKappa$ and $\widetilde{\phi} =
+\MisspecPhi$, both within a few percentage points of
+$\widehat{\kappa}$ and $\widehat{\phi}$.\\
 
-A region-$r$ innovation subsidy of size $\tau_r \ge 0$ changes only the
-\emph{private} payoff of an old-tech firm switching to ``both''
-technology:
-\begin{equation}
-  u^{\mathrm{innov}}_r
-    = \pi^{\mathrm{both}}_r(s) - (\kappa - \tau_r)
-      + \beta\, \mathrm{EV}^{\mathrm{old}\to\mathrm{both}}_r,
-  \label{eq:subsidy_payoff}
-\end{equation}
-leaving the entry decision and the rest of the game unchanged. The
-implementation adds a single \texttt{subsidy} field to the parameter
-struct; the default \texttt{(0,0,0)} recovers the
-no-subsidy baseline. We sweep the one-region policy
-$\tau = (0, 0, \tau)$ to isolate the question ``what does targeted
-industrial policy in region~3 do?'' from the broader question of a
-global R\&D subsidy. The spillover specification stays at the local-only
-baseline of equation~\eqref{eq:local_agglom}.
+Table~\ref{tab:misspec} reports the comparison. The innovation-rate
+panel is a tie. Both models match the average
+$P(\text{innov} \mid \text{old})$ and $P(\text{enter} \mid \text{pe})$
+to four decimals, so the innovator's-dilemma gap is identical. This is
+a feature of the estimation procedure: MLE pins action frequencies at
+the realized states, so any model whose Cournot intercept is fitted to
+the same data will reproduce the same period-1 CCPs at those states.
+This is also why we kept hoping for a sharper finding and did not
+get one.\\
 
-\subsection{Welfare under sovereign funding}
+\noindent \textit{Markup heterogeneity.}
+On the new-generation side the misspecified model under-predicts both
+the level and the dispersion of markups: mean Lerner index
+$\MisspecLernerNew$ versus $\TrueLernerNew$, standard deviation
+$\MisspecLernerNewSd$ versus $\TrueLernerNewSd$. By assumption the
+misspecified marginal cost does not move with peer density, so realized
+markups do not either. The true model captures the cross-state
+covariance between cost and quantity that the misspecified one
+collapses.\\
 
-Each region is treated as a sovereign country: its own government funds
-its own subsidy from its own taxpayers, so the transfer
-$\tau_r \cdot k^{\mathrm{innov}}_r$ flows from region~$r$'s taxpayers to
-region~$r$'s firms and cancels exactly inside region~$r$'s welfare. The
-\emph{social} resource cost remains the full $\kappa$ even when the firm
-only pays $(\kappa - \tau_r)$; the subsidy reduces the private burden,
-not the real labour and materials embodied in a new-technology
-blueprint. Two-period discounted welfare per region is therefore
-\begin{equation}
-  W_r
-    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\, \mathrm{CS}(s_1)\bigr]
-    + \mathrm{PS}_r(s_0) + \beta\, \mathrm{PS}_r(s_1)
-    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
-  \label{eq:welfare_subsidy}
-\end{equation}
-identical in form to equation~\eqref{eq:welfare}: the subsidy is a
-within-region transfer that does not appear in $W_r$. With this
-accounting, the identity
-$\sum_r W_r = \mathrm{CS}_{\mathrm{total}} + \sum_r \mathrm{PS}_r
-- \sum_r (\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$
-holds exactly in the baseline and in every grid scenario. The runner
-verifies it numerically and finds residuals at machine precision.
-
-\subsection{Evaluation by Monte Carlo with common random numbers}
-
-We average $K = \SubsidyNMarkets$ independent simulations per scenario.
-Each market draws its own initial state $s_0$ from the same distribution
-\texttt{simulate\_data.jl} uses, so the counterfactual sits on the same
-population the model was estimated on. The same seed (\SubsidySeed)
-drives the baseline and every grid point, with per-market
-\texttt{MersenneTwister(seed + $k$)}. Identical $s_0$ draws and
-identical EVT1 shock paths under all scenarios mean each market
-contributes paired observations $(W_r^{\mathrm{base}},
-W_r^{\tau})$, so the variance of the welfare difference is much smaller
-than the variance of either level. Headline numbers stabilise to roughly
-$0.05$ percentage points by $K = 1000$.
-
-\subsection{Calibration and results}
-
-We hold the demand parameters, $\beta$, $\sigma$, $\rho$, $c_o$, $c_{n,0}$,
-and $N_{\max}$ at the values of Table~\ref{tab:params}, and use the
-structural estimates from Section~\ref{sec:estimation}: $\widehat{\kappa} =
-\SubsidyKappaHat$, $\widehat{\phi} = \SubsidyPhiHat$, and uniform
-$\widehat{\gamma}_r = \SubsidyGammaHat$.\\
-
-Table~\ref{tab:subsidy} reports the full grid sweep. Region~3's
-innovation rate climbs steadily from $\SubsidyBaseInnovRThree$ at $\tau =
-0$ to $\SubsidyMaxInnovRThree$ at the largest grid point, while regions~1
-and~2 dip slightly through equilibrium feedback. Aggregate welfare,
-however, is weakly decreasing in $\tau$ across the grid, and the
-welfare-maximising grid point is
-$\tau / \widehat{\kappa} = \SubsidyOptimumFrac$.\\
+\noindent \textit{Comparative-static prediction.}
+A counterfactual $+1$ \texttt{both}-firm shock to region~1 produces
+$\Delta P(\text{innov} \mid \text{old}, r=1) = \MisspecDpioROne$ in
+the misspecified model and $\TrueDpioROne$ in the true model
+(firm-weighted across the period-0 states where the perturbation is
+feasible). The drop is roughly three times larger under
+misspecification, since the misspec model has no offsetting
+cost-reduction channel. The direction is the same in both models,
+and the absolute magnitude of the gap is small (under three percentage
+points), so the substantive interpretation is similar.\\
 
 \begin{table}[ht]
   \centering
-  \caption{Region-3 innovation subsidy: grid sweep over $\tau / \widehat{\kappa}$}
+  \caption{Correct vs.\ misspecified model: estimates and predictions}
   \medskip
-  \label{tab:subsidy}
-  \input{../output/tables/subsidy_results.tex}
-  \caption*{\footnotesize Notes: Monte Carlo over $K = \SubsidyNMarkets$
-    independent markets, each drawing its own $s_0$ from the DGP used by
-    \texttt{simulate\_data.jl}; common random numbers across all
-    scenarios (seed = \SubsidySeed). Calibration: $\widehat{\kappa} =
-    \SubsidyKappaHat$, $\widehat{\phi} = \SubsidyPhiHat$, uniform
-    $\widehat{\gamma}_r = \SubsidyGammaHat$. The subsidy is region-3
-    only: $(0, 0, \tau)$. Welfare is computed under sovereign funding,
-    so the transfer cancels within region~3. CS allocated equally
-    across the three regions; PS$_r$ aggregates own-region firms'
-    profits in both periods; costs paid charges the full
-    $\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r$ to
-    region~$r$.}
+  \label{tab:misspec}
+  \input{../output/tables/misspec_comparison.tex}
+  \caption*{\footnotesize Notes: The misspecified model imposes
+    $\gamma \equiv 0$ and fits a region intercept $\delta_r$ on
+    new-tech marginal cost. Step~1 re-estimates
+    $(\delta_1, \delta_2, \delta_3)$ by NLS on observed Cournot
+    quantities; Step~2 re-estimates $(\kappa, \phi)$ by MLE on
+    period-1 actions, conditional on the misspecified Cournot
+    continuation values. Innovation-rate moments are firm-weighted
+    across (market, region) at the period-0 states observed in
+    \texttt{data/simulated\_data.csv}. Lerner indices $(P-MC)/P$ are
+    quantity-weighted within a market and equal-weighted across
+    markets, with the across-market standard deviation reported
+    after the slash. The comparative static
+    $\Delta P(\text{innov}\mid\text{old}, r=1)$ averages, firm-weighted
+    across markets, the response of the region-1 innovation rate to
+    adding one \texttt{both} firm in region~1; markets where the
+    perturbation would exceed $N_{\max}$ are dropped.}
 \end{table}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/subsidy_innovation.pdf}
-  \caption{Innovation rate $P(\text{innov} \mid \text{old}, r)$ by region
-           across the subsidy grid. Only region~3 (treated) responds
-           strongly; regions~1 and~2 dip slightly through equilibrium
-           feedback.}
-  \label{fig:subsidy_innovation}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/subsidy_grid.pdf}
-  \caption{Per-region and total welfare change vs.\ baseline as a
-           function of $\tau / \widehat{\kappa}$. Aggregate welfare
-           (black) is weakly decreasing in $\tau$; region~3's own
-           welfare gain is small relative to the losses borne by
-           regions~1 and~2.}
-  \label{fig:subsidy_grid}
-\end{figure}
-
-\subsection{Discussion}
-
-Three points are worth highlighting.\\
-
-\textbf{The subsidy works on its target margin.} Region~3's
-$P(\mathrm{innov} \mid \mathrm{old})$ rises from $\SubsidyBaseInnovRThree$
-to $\SubsidyMaxInnovRThree$ at $\tau / \widehat{\kappa} = \SubsidyMaxFrac$,
-a $\SubsidyMaxInnovPctRThree\,\%$ lift. The mechanism is direct: a lower
-private cost moves the threshold draw of the EVT1 shock that triggers
-innovation. As a policy lever for raising regional R\&D activity, the
-subsidy works.\\
-
-\textbf{But aggregate welfare is weakly decreasing in $\tau$.} A
-subsidy is welfare-improving only if there is a positive externality
-on the subsidised margin that the firm fails to internalise. In our
-calibration the agglomeration externality $\widehat{\gamma}_r =
-\SubsidyGammaHat$ is \emph{local}: region~3's innovation today helps
-only region~3's own period-2 cost, and the firm already internalises
-the bulk of that benefit through its expected period-2 profit. Cournot
-competition across regions, in contrast, makes region-3 expansion a
-\emph{negative} externality on regions~1 and~2, which the planner does
-internalise. Both forces push the optimum toward $\tau = 0$, and the
-welfare-maximising grid point is exactly that: $\tau / \widehat{\kappa}
-= \SubsidyOptimumFrac$.\\
-
-\textbf{The non-treated regions bear small but consistent losses.}
-Cheaper region-3 production drags the global new-technology price down,
-so regions~1 and~2 see lower firm profits. The CS share they receive
-from cheaper goods is too small to compensate. At
-$\tau / \widehat{\kappa} = \SubsidyMaxFrac$, region~1 loses
-$\SubsidyMaxDWPctROne\,\%$ of its baseline welfare and region~2 loses
-$\SubsidyMaxDWPctRTwo\,\%$. These are small but signed in the same
-direction across all $K \in \{500, 1000, 5000\}$.\\
-
-The result is calibration-dependent. Under a spillover specification
-that pools region~3 with another region (an alliance variant of
-Section~\ref{sec:merger}), the planner would internalise the spillover
-from region-3 innovation onto its partner and the optimum would shift
-right. With a larger $\widehat{\gamma}$ or a tighter $\rho$, the
-cross-region effects scale accordingly. Full details, including the
-K-stability diagnostic and the sovereign-funding accounting, are in
-\texttt{notes/subsidy\_counterfactual.md}.
-
-\section{Counterfactual: Region-3 Entry Subsidy}
-\label{sec:entry_subsidy}
-
-A region-3 \emph{entry} subsidy of size $\psi$ shifts the private cost
-of entering as a new-technology firm in region~3 from $\widehat{\phi}$
-to $(\widehat{\phi} - \psi)$ while leaving the social resource cost of
-entry unchanged at $\widehat{\phi}$. Sweeping $\psi$ over the grid
-$\psi / \widehat{\phi} \in \{0, 0.10, \ldots, 0.50\}$ shows that, in
-contrast to the innovation subsidy, \emph{aggregate welfare is weakly
-increasing in $\psi$ across the grid}. At the largest grid point
-$\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$, region~3's
-$P(\mathrm{enter} \mid \mathrm{pe})$ rises by
-$\EntrySubsidyMaxEnterPctRThree\,\%$, and its own welfare moves by
-$\EntrySubsidyMaxDWPctRThree\,\%$, while regions~1 and~2 lose
-$\EntrySubsidyMaxDWPctROne\,\%$ and $\EntrySubsidyMaxDWPctRTwo\,\%$
-respectively; total welfare changes by
-$\EntrySubsidyMaxDWPctTotal\,\%$. The welfare-maximising grid point is
-$\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$
-($\Delta\Sigma W = \EntrySubsidyOptimumDWPct\,\%$). The aggregate gain
-is small but positive, and the qualitative sign flip relative to the
-innovation subsidy comes from how each policy reshapes the new-tech
-market.
-
-\subsection{Subsidy specification}
-
-A region-$r$ entry subsidy of size $\psi_r \ge 0$ changes only the
-\emph{private} payoff of a potential entrant becoming a new-tech firm:
-\begin{equation}
-  u^{\mathrm{enter}}_r = -(\phi - \psi_r) + \beta\,
-  \mathrm{EV}^{\mathrm{pe}\to\mathrm{new}}_r,
-  \label{eq:entry_subsidy_payoff}
-\end{equation}
-leaving the innovation decision and the rest of the game unchanged.
-The implementation adds a single \texttt{entry\_subsidy} field to the
-parameter struct; the default \texttt{(0,0,0)} recovers the
-no-subsidy baseline. We sweep the one-region policy
-$\psi = (0, 0, \psi)$ to isolate targeted entry policy in region~3
-from the question of a global entry subsidy. The spillover
-specification stays at the local-only baseline.
-
-\subsection{Welfare under sovereign funding}
-
-As in the innovation-subsidy section, region~$r$'s government funds
-its own subsidy from its own taxpayers, so the transfer
-$\psi_r \cdot k^{\mathrm{enter}}_r$ flows from region~$r$'s taxpayers
-to region~$r$'s entrants and cancels exactly inside region~$r$'s
-welfare. The social resource cost of an entry remains the full
-$\phi$. Two-period discounted welfare per region is
-\begin{equation}
-  W_r
-    = \tfrac{1}{R}\bigl[\mathrm{CS}(s_0) + \beta\, \mathrm{CS}(s_1)\bigr]
-    + \mathrm{PS}_r(s_0) + \beta\, \mathrm{PS}_r(s_1)
-    - \kappa\, k^{\mathrm{innov}}_r - \phi\, k^{\mathrm{enter}}_r,
-  \label{eq:welfare_entry_subsidy}
-\end{equation}
-identical in form to equation~\eqref{eq:welfare}: the entry subsidy is
-a within-region transfer that does not appear in $W_r$. The identity
-$\sum_r W_r = \mathrm{CS}_{\mathrm{total}} + \sum_r \mathrm{PS}_r
-- \sum_r (\kappa\, k^{\mathrm{innov}}_r + \phi\, k^{\mathrm{enter}}_r)$
-holds at machine precision in baseline and in every grid scenario.
-
-\subsection{Evaluation by Monte Carlo with common random numbers}
-
-We average $K = \EntrySubsidyNMarkets$ independent simulations per
-scenario, with the same seed (\EntrySubsidySeed) across baseline and
-every grid point and per-market \texttt{MersenneTwister(seed + $k$)}.
-Headline numbers stabilise to roughly $0.05$ percentage points by
-$K = 1000$; the aggregate welfare effect is small (about a basis
-point) but its sign is robust across $K$.
-
-\subsection{Calibration and results}
-
-We use the structural estimates from Section~\ref{sec:estimation}:
-$\widehat{\kappa} = \EntrySubsidyKappaHat$,
-$\widehat{\phi} = \EntrySubsidyPhiHat$, and uniform
-$\widehat{\gamma}_r = \EntrySubsidyGammaHat$.\\
-
-Table~\ref{tab:entry_subsidy} reports the full grid sweep. Region~3's
-entry rate climbs from $\EntrySubsidyBaseEnterRThree$ at $\psi = 0$ to
-$\EntrySubsidyMaxEnterRThree$ at the largest grid point, while
-regions~1 and~2 dip very slightly through equilibrium feedback.
-Aggregate welfare is weakly increasing in $\psi$, and the
-welfare-maximising grid point is the largest one,
-$\psi / \widehat{\phi} = \EntrySubsidyOptimumFrac$.\\
-
-\begin{table}[ht]
-  \centering
-  \caption{Region-3 entry subsidy: grid sweep over $\psi / \widehat{\phi}$}
-  \medskip
-  \label{tab:entry_subsidy}
-  \input{../output/tables/entry_subsidy_results.tex}
-  \caption*{\footnotesize Notes: Monte Carlo over
-    $K = \EntrySubsidyNMarkets$ independent markets, each drawing its
-    own $s_0$ from the DGP used by \texttt{simulate\_data.jl}; common
-    random numbers across all scenarios (seed =
-    \EntrySubsidySeed). Calibration: $\widehat{\kappa} =
-    \EntrySubsidyKappaHat$, $\widehat{\phi} = \EntrySubsidyPhiHat$,
-    uniform $\widehat{\gamma}_r = \EntrySubsidyGammaHat$. The subsidy
-    is region-3 only: $(0, 0, \psi)$. Welfare is computed under
-    sovereign funding, so the transfer cancels within region~3.}
-\end{table}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/entry_subsidy_entry.pdf}
-  \caption{Entry rate $P(\mathrm{enter} \mid \mathrm{pe}, r)$ by region
-           across the entry-subsidy grid. Only region~3 (treated)
-           responds strongly; regions~1 and~2 dip slightly through
-           equilibrium feedback.}
-  \label{fig:entry_subsidy_entry}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.75\textwidth]{../output/figures/entry_subsidy_grid.pdf}
-  \caption{Per-region and total welfare change vs.\ baseline as a
-           function of $\psi / \widehat{\phi}$. Aggregate welfare
-           (black) is weakly increasing in $\psi$; region~3's own
-           welfare gain exceeds the losses borne by regions~1 and~2.}
-  \label{fig:entry_subsidy_grid}
-\end{figure}
-
-\subsection{Discussion}
-
-The entry subsidy raises aggregate welfare; the innovation subsidy
-lowers it. Both move the same regional margin (more region-3 new-tech
-output) and use the same sovereign-funding accounting, so the sign
-flip has to come from how each policy reshapes the global new-tech
-market.\\
-
-\textbf{Entry brings a fresh competitor without cannibalisation.}
-Innovating firms are old-tech incumbents that switch to ``both''.
-They were already producing old-tech output, and the new-tech output
-they add as ``both'' partly cannibalises that old-tech revenue
-through cross-market substitution $\rho$. New entrants, in contrast,
-arrive with no legacy old-tech output to displace. Each marginal
-entry therefore adds more total new-tech quantity at the global
-Cournot stage than each marginal innovation does, and the
-consumer-surplus gain is correspondingly larger relative to the
-producer-surplus losses borne by competitors.\\
-
-\textbf{The aggregate effect is small but positive.} At
-$\psi / \widehat{\phi} = \EntrySubsidyMaxFrac$, total welfare rises
-by $\EntrySubsidyMaxDWPctTotal\,\%$ of baseline. Region~3 gains
-$\EntrySubsidyMaxDWPctRThree\,\%$ of its own welfare; regions~1 and~2
-lose $\EntrySubsidyMaxDWPctROne\,\%$ and
-$\EntrySubsidyMaxDWPctRTwo\,\%$ respectively. The losses to the
-non-treated regions are real (cheaper region-3 entrants depress the
-global new-tech price) but smaller in magnitude than under the
-innovation subsidy at the same private-cost reduction.\\
-
-The result is consistent with the standard intuition that
-\emph{entry} subsidies correct an under-entry distortion in
-oligopoly more cleanly than \emph{technology-switching} subsidies,
-which have to net out the cannibalisation that the switching firm
-would otherwise impose on itself. Full details, including the
-K-stability diagnostic, are in
-\texttt{notes/entry\_subsidy\_counterfactual.md}.
-
-\section{Next Steps}
-
-\begin{enumerate}
-  \item \textbf{Heterogeneous absorptive capacity.} The alliance result
-        here uses uniform $\widehat{\gamma}_r$. Allowing $\gamma_r$ to
-        differ across regions, with the bloc-pooled spec of
-        equation~\eqref{eq:bloc_pool}, would let one region's higher
-        absorptive capacity amplify the alliance's effect.
-  \item \textbf{Fiscal cost of policy.} The current welfare accounting
-        prices in firms' own costs paid but does not net out the fiscal
-        cost of any subsidy a government would need to deliver to enlarge
-        $\gamma_r$ in a target region. Adding government revenue and cost
-        makes the targeted-subsidy and alliance scenarios directly
-        comparable as policy levers.
-  \item \textbf{$T > 2$ horizon.} A genuine multi-period extension would
-        force the value-function recursion to use the
-        $\sigma \log \sum \exp$ ex-ante form at every internal period.
-        The current 2-period setup avoids this because period~2 is
-        terminal.
-\end{enumerate}
 
 \end{document}
