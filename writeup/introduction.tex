@@ -1,0 +1,38 @@
+\section{Introduction}
+
+Why do some industries innovate rapidly while others stagnate? When
+innovation concentrates geographically, as in semiconductors, software, and
+biotechnology, what role do cross-firm knowledge spillovers play?
+\citet{igami_estimating_2017} answers a version of the first question for
+the hard-disk-drive industry, where the central friction is cannibalization.
+Adoption of a new generation forces an incumbent to compete in the new
+market against its own old-generation product, while pure entrants face no
+such conflict. Incumbents therefore adopt more slowly than entrants, and
+they lose share as the new generation takes over: the innovator's dilemma.\\
+
+We extend the Igami model in two directions. First, we introduce regional
+heterogeneity: $R = 3$ regions, each with its own roster of old incumbents,
+adopters, new entrants, and potential entrants. Second, we add bloc-pooled
+agglomeration spillovers, in which the marginal cost of adopting new
+technology in region $r$ falls in the total number of adopters in $r$'s
+spillover bloc. The default calibration assigns each region to its own
+singleton bloc, recovering purely local spillovers and nesting the Igami
+baseline \citep{carlino_kerr_2015_agglomeration}. \textcolor{red}{[Pedro]
+cite a paper documenting that agglomeration effects are quantitatively
+important.}\\
+
+The paper makes three contributions. Methodologically, we show that
+\citeauthor{igami_estimating_2017}'s sequential-move solver extends to
+multiple regions. Within each period, stages move in the order old $\to$
+both $\to$ new $\to$ potential entrants, and within each stage the three
+regions move sequentially. \textcolor{teal}{[Stas] consider the alternative
+reduction we discussed to cut computational burden.} Each sub-stage reduces
+to a closed-form logit, so no fixed-point iteration is required.
+Empirically, we estimate the model in two steps that identify agglomeration
+($\gamma$) separately from the action-cost parameters ($\kappa, \phi$).
+Nonlinear least squares on the deterministic Cournot quantities pins
+$\gamma$. Maximum likelihood with the stage order replayed pins
+$(\kappa, \phi)$. For policy, we study innovation and entry subsidies
+targeted at a single region. Each is welfare-reducing in isolation, but a
+\emph{joint} subsidy tilted toward entry generates a small positive
+aggregate effect when agglomeration spillovers are active.

@@ -73,7 +73,7 @@ function plot_joint_subsidy_main()
                       dpi = 200,
                       titlefontsize = 13, guidefontsize = 11,
                       tickfontsize = 10,
-                      xticks = 0.0:0.10:0.50, yticks = 0.0:0.10:0.50,
+                      xticks = 0.0:0.20:1.00, yticks = 0.0:0.20:1.00,
                       framestyle = :box,
                       left_margin = 6Plots.mm, bottom_margin = 6Plots.mm,
                       right_margin = 12Plots.mm, top_margin = 12Plots.mm)
@@ -93,7 +93,7 @@ function plot_joint_subsidy_main()
              marker = :star5, ms = 14, color = :gold,
              markerstrokecolor = :black, markerstrokewidth = 1.5,
              label = "Planner argmax  (γ = γ̂)",
-             legend = :topright, foreground_color_legend = nothing,
+             legend = :topleft, foreground_color_legend = nothing,
              background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
     scatter!(plt, [psi_frac[j_best_zg]], [tau_frac[i_best_zg]];
              marker = :circle, ms = 9, color = :black,
@@ -110,7 +110,7 @@ function plot_joint_subsidy_main()
              marker = :star5, ms = 14, color = :gold,
              markerstrokecolor = :black, markerstrokewidth = 1.5,
              label = "Region-3 argmax",
-             legend = :topright, foreground_color_legend = nothing,
+             legend = :topleft, foreground_color_legend = nothing,
              background_color_legend = RGBA(1.0, 1.0, 1.0, 0.85))
     fig_path_r3 = joinpath(fig_dir, "joint_subsidy_heatmap_r3.pdf")
     savefig(plt3, fig_path_r3)

@@ -1,7 +1,7 @@
 """
 run_joint_subsidy.jl — Joint region-3 entry + innovation subsidy grid sweep.
 
-For each (τ, ψ) on the grid {0, 0.1, …, 0.5} × {0, 0.1, …, 0.5}, where
+For each (τ, ψ) on the grid {0, 0.1, …, 1.0} × {0, 0.1, …, 1.0}, where
 τ = frac_τ · κ̂ is the region-3 innovation subsidy and ψ = frac_ψ · φ̂ is
 the region-3 entry subsidy, we evaluate aggregate welfare under the same
 sovereign-funding accounting used by `run_subsidy.jl` and
@@ -58,8 +58,8 @@ const GAMMA_HAT = (read_macro(EST_PATH, "SpilloverOneHat"),
                    read_macro(EST_PATH, "SpilloverThreeHat"))
 
 # ── Joint grid: (τ/κ̂, ψ/φ̂) ────────────────────────────────────────────────
-const TAU_FRAC = collect(0.0:0.10:0.50)
-const PSI_FRAC = collect(0.0:0.10:0.50)
+const TAU_FRAC = collect(0.0:0.10:1.00)
+const PSI_FRAC = collect(0.0:0.10:1.00)
 
 # ── MC configuration ────────────────────────────────────────────────────────
 const N_MARKETS = 5000
